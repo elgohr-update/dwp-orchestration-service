@@ -1,1 +1,1 @@
-rootProject.name = "App"
+rootProject.name = "OrchestrationService"
