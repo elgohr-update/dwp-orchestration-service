@@ -34,6 +34,14 @@ data "template_cloudinit_config" "ecs_config" {
     content_type = "text/x-shellscript"
     content      = <<EOF
     #!/bin/bash
+    yum install -y amazon-ssm-agent && initctl start amazon-ssm-agent
+EOF
+  }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
     echo ECS_CLUSTER=${var.name_prefix} >> /etc/ecs/ecs.config
 EOF
   }

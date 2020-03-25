@@ -69,7 +69,7 @@ module "ecs-user-host" {
   source = "../../modules/ecs-user"
   ami_id = data.aws_ami.hardened.id
   auto_scaling = {
-    max_size              = 3
+    max_size              = 1
     min_size              = 1
     max_instance_lifetime = 604800
   }
@@ -80,5 +80,6 @@ module "ecs-user-host" {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
     interface_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.interface_vpce_sg_id
+    s3_prefix_list_id    = data.terraform_remote_state.aws_analytical_env_infra.outputs.s3_prefix_list_id
   }
 }

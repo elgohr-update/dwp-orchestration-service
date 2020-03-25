@@ -21,6 +21,7 @@ variable "vpc" {
     id                   = string
     aws_subnets_private  = list(any)
     interface_vpce_sg_id = string
+    s3_prefix_list_id    = string
   })
 }
 
