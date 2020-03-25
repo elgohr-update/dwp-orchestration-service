@@ -20,6 +20,11 @@ resource "aws_iam_instance_profile" "user_host" {
   role = aws_iam_role.user_host.id
 }
 
+resource "aws_iam_role_policy_attachment" "ecs" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+  role       = aws_iam_role.user_host.id
+}
+
 // TODO: replace with custom policy due to too open AWS policy
 resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"

@@ -1,6 +1,11 @@
 resource "aws_ecs_cluster" "user_host" {
   name               = var.name_prefix
   capacity_providers = [aws_ecs_capacity_provider.user_host.name]
+
+  default_capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.user_host.name
+    weight            = 100
+  }
 }
 
 resource "aws_ecs_capacity_provider" "user_host" {
@@ -10,9 +15,10 @@ resource "aws_ecs_capacity_provider" "user_host" {
     managed_termination_protection = "ENABLED"
 
     managed_scaling {
+      status                    = "ENABLED"
       maximum_scaling_step_size = 10
       minimum_scaling_step_size = 1
-      status                    = "ENABLED"
+      target_capacity           = 100
     }
 
   }

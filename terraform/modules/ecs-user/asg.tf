@@ -26,12 +26,28 @@ resource "aws_autoscaling_group" "user_host" {
   }
 }
 
+data "template_cloudinit_config" "ecs_config" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+    echo ECS_CLUSTER=${var.name_prefix} >> /etc/ecs/ecs.config
+EOF
+  }
+
+}
+
 resource "aws_launch_template" "user_host" {
   name_prefix                          = "${var.name_prefix}-"
   image_id                             = var.ami_id
   instance_type                        = var.instance_type
   instance_initiated_shutdown_behavior = "terminate"
   tags                                 = merge(var.common_tags, { Name = "${var.name_prefix}-lt" })
+
+  user_data = data.template_cloudinit_config.ecs_config.rendered
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -54,7 +70,7 @@ resource "aws_launch_template" "user_host" {
 
   tag_specifications {
     resource_type = "instance"
-    tags          = merge(var.common_tags, { Name = var.name_prefix, "SSMEnabled" = true })
+    tags          = merge(var.common_tags, { Name = var.name_prefix, "SSMEnabled" = "True" })
   }
 
   tag_specifications {
@@ -75,3 +91,4 @@ resource "aws_launch_template" "user_host" {
     create_before_destroy = true
   }
 }
+

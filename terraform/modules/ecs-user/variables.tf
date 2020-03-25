@@ -18,8 +18,9 @@ variable "instance_type" {
 
 variable "vpc" {
   type = object({
-    id                  = string
-    aws_subnets_private = list(any)
+    id                   = string
+    aws_subnets_private  = list(any)
+    interface_vpce_sg_id = string
   })
 }
 

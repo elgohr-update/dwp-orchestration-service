@@ -57,11 +57,11 @@ module "ecs-fargate-service" {
 
 data "aws_ami" "hardened" {
   most_recent = true
-  owners      = ["self", local.account["management"]]
+  owners      = ["self", local.account["management"], "amazon"]
 
   filter {
     name   = "name"
-    values = ["dw-hardened-ami-*"]
+    values = ["amzn-ami-*-amazon-ecs-optimized"]
   }
 }
 
@@ -77,7 +77,8 @@ module "ecs-user-host" {
   instance_type = "t3.medium"
   name_prefix   = "${var.name_prefix}-user-host"
   vpc = {
-    id                  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
-    aws_subnets_private = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
+    id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
+    aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
+    interface_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.interface_vpce_sg_id
   }
 }
