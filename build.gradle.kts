@@ -23,6 +23,10 @@ dependencies {
 	// Spring
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springdoc:springdoc-openapi-core:1.1.49")
+	// Monitoring
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation("io.micrometer:micrometer-core:1.3.2")
+	implementation("io.micrometer:micrometer-registry-prometheus:1.3.2")
 	// JWT
 	implementation ("com.auth0:java-jwt:3.10.0")
 	implementation ("com.auth0:jwks-rsa:0.11.0")
