@@ -13,6 +13,7 @@ terraform {
 
 data "terraform_remote_state" "emr_cluster_broker_infra" {
   backend = "s3"
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"
@@ -26,6 +27,7 @@ data "terraform_remote_state" "emr_cluster_broker_infra" {
 
 data "terraform_remote_state" "infra" {
   backend = "s3"
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"
@@ -39,6 +41,7 @@ data "terraform_remote_state" "infra" {
 
 data "terraform_remote_state" "aws_analytical_env_infra" {
   backend = "s3"
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"
@@ -52,6 +55,7 @@ data "terraform_remote_state" "aws_analytical_env_infra" {
 
 data "terraform_remote_state" "aws_certificate_authority" {
   backend = "s3"
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"

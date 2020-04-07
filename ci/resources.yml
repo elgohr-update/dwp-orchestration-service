@@ -1,0 +1,17 @@
+resources:
+- name: orchestration-service-pr
+  type: pull-request
+  source:
+    access_token: ((github_com.token))
+    repo: dwp/orchestration-service
+    uri: https://github.com/dwp/orchestration-service.git
+  check_every: 15m
+- name: orchestration-service
+  type: git
+  source:
+    branch: master
+    username: ((github_com.username))
+    password: ((github_com.token))
+    uri: https://github.com/dwp/orchestration-service.git
+  check_every: 15m
+
