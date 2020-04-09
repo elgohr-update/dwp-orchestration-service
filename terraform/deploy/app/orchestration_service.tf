@@ -22,7 +22,24 @@ module "ecs-fargate-task-definition" {
       "awslogs-stream-prefix" = "ecs"
     }
   }
-  environment = []
+  environment = [
+    {
+      name  = "orchestrationService.user_container_task_definition"
+      value = "${var.name_prefix}-ui-service"
+    },
+    {
+      name  = "orchestrationService.load_balancer_name"
+      value = "${var.name_prefix}-lb"
+    },
+    {
+      name  = "orchestrationService.aws_region"
+      value = var.region
+    },
+    {
+      name  = "orchestrationService.cognito_user_pool_id"
+      value = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito.user_pool_id
+    }
+  ]
 }
 #
 ## ---------------------------------------------------------------------------------------------------------------------
@@ -82,4 +99,18 @@ module "ecs-user-host" {
     interface_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.interface_vpce_sg_id
     s3_prefix_list_id    = data.terraform_remote_state.aws_analytical_env_infra.outputs.s3_prefix_list_id
   }
+}
+#
+## ---------------------------------------------------------------------------------------------------------------------
+## ECS UserService
+## ---------------------------------------------------------------------------------------------------------------------
+module "ec2_task_definition" {
+  source      = "../../modules/ec2-task-definition"
+  region      = var.region
+  name_prefix = "${var.name_prefix}-task-definition"
+
+  chrome_image     = "${local.account[local.environment]}.dkr.ecr.${var.region}.amazonaws.com/aws-analytical-env/hardened-guac-chrome"
+  guacd_image      = "${local.account[local.environment]}.dkr.ecr.${var.region}.amazonaws.com/aws-analytical-env/guacd"
+  jupyterhub_image = "${local.account[local.environment]}.dkr.ecr.${var.region}.amazonaws.com/aws-analytical-env/jupyterhub"
+
 }

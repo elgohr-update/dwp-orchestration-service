@@ -11,6 +11,12 @@ group = "uk.gov.dwp.dataworks"
 
 repositories {
 	mavenCentral()
+	jcenter()
+	maven(url = "https://jitpack.io")
+}
+
+configurations.all {
+	exclude(group="org.slf4j", module="slf4j-log4j12")
 }
 
 dependencies {
@@ -18,8 +24,11 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	// AWS
-	implementation(platform("software.amazon.awssdk:bom:2.10.89"))
+	implementation(platform("software.amazon.awssdk:bom:2.11.11"))
 	implementation("software.amazon.awssdk:regions")
+	implementation("software.amazon.awssdk:codegen")
+	implementation("software.amazon.awssdk:elasticloadbalancingv2")
+
 	// Spring
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springdoc:springdoc-openapi-core:1.1.49")
@@ -30,15 +39,24 @@ dependencies {
 	// JWT
 	implementation ("com.auth0:java-jwt:3.10.0")
 	implementation ("com.auth0:jwks-rsa:0.11.0")
+	// Logging things
+	implementation("com.github.dwp:dataworks-common-logging:0.0.4")
+	runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
+	runtimeOnly("ch.qos.logback:logback-core:1.2.3")
+
 	// Testing
-	testImplementation("org.springframework.boot:spring-boot-starter-test") {
-		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
-	}
+	implementation ("com.fasterxml.jackson.core:jackson-annotations:2.10.2")
+	implementation ("com.fasterxml.jackson.core:jackson-core:2.10.2")
+	implementation ("com.fasterxml.jackson.core:jackson-databind:2.10.2")
+	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+	implementation ("software.amazon.awssdk:ecs")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.batch:spring-batch-test")
 	testImplementation("io.kotlintest:kotlintest-runner-junit5:3.3.3")
 	testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
-
-
 }
 
 tasks.withType<Test> {
@@ -50,6 +68,4 @@ tasks.withType<KotlinCompile> {
 		freeCompilerArgs = listOf("-Xjsr305=strict")
 		jvmTarget = "1.8"
 	}
-
 }
-
