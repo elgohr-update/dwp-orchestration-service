@@ -15,16 +15,16 @@ import uk.gov.dwp.dataworks.logging.DataworksLogger
 @Service
 class TaskDeploymentService {
     companion object {
-        val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService ::class.java))
+        val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
     val configurationService = ConfigurationService()
 
-    private fun createService (ecs_cluster_name: String, user_name: String, ecsClient: EcsClient, containerPort : Int,targetGroupArn: String) {
+    private fun createService(ecsClusterName: String, userName: String, ecsClient: EcsClient, containerPort: Int, targetGroupArn: String) {
 
         val alb: LoadBalancer = LoadBalancer.builder().targetGroupArn(targetGroupArn).containerPort(containerPort).build()
 
-        val serviceBuilder = CreateServiceRequest.builder().cluster(ecs_cluster_name).loadBalancers(alb).serviceName("${user_name}_test").taskDefinition(configurationService.getStringConfig(ConfigKey.USER_CONTAINER_TASK_DEFINITION)).loadBalancers(alb).desiredCount(1).build()
+        val serviceBuilder = CreateServiceRequest.builder().cluster(ecsClusterName).loadBalancers(alb).serviceName(userName).taskDefinition(configurationService.getStringConfig(ConfigKey.USER_CONTAINER_TASK_DEFINITION)).loadBalancers(alb).desiredCount(1).build()
         logger.info("Creating Service...")
 
         try {
@@ -36,17 +36,17 @@ class TaskDeploymentService {
         }
     }
 
-    fun getVacantPriorityValue (rulesResponse : DescribeRulesResponse) : Int {
+    fun getVacantPriorityValue(rulesResponse: DescribeRulesResponse): Int {
 
         val rulePriorities = rulesResponse.rules().map { it.priority() }.filter { it != "default" }.map { Integer.parseInt(it) }.toSet()
         if (rulePriorities.size >= 1000) throw UpperRuleLimitReachedException()
-        for(priority in 0..1000) {
-            if(!rulePriorities.contains(priority)) return priority
+        for (priority in 0..1000) {
+            if (!rulePriorities.contains(priority)) return priority
         }
         throw UpperRuleLimitReachedException()
     }
 
-    fun taskDefinitionWithOverride(ecsClusterName: String, emrClusterHostName: String, albName :String, userName: String, containerPort : Int , jupyterCpu : Int , jupyterMemory: Int ) {
+    fun taskDefinitionWithOverride(ecsClusterName: String, emrClusterHostName: String, albName: String, userName: String, containerPort: Int, jupyterCpu: Int, jupyterMemory: Int) {
 
         val ecsClient = EcsClient.builder().region(configurationService.awsRegion).build()
         val albClient = ElasticLoadBalancingV2Client.builder().region(configurationService.awsRegion).build()
@@ -79,14 +79,14 @@ class TaskDeploymentService {
 
         logger.info("Creating listener rule...")
 
-        var rulesResponse = albClient.describeRules(DescribeRulesRequest.builder().listenerArn(albListenerResponse.listeners()[0].listenerArn()).build())
+        val rulesResponse = albClient.describeRules(DescribeRulesRequest.builder().listenerArn(albListenerResponse.listeners()[0].listenerArn()).build())
         albClient.createRule(CreateRuleRequest.builder().listenerArn(albListenerResponse.listeners()[0].listenerArn()).priority(getVacantPriorityValue(rulesResponse)).conditions(albRuleCondition).actions(albRuleAction).build())
 
-       createService(ecsClusterName, userName, ecsClient, containerPort ,albTargetGroupArn)
+        createService(ecsClusterName, userName, ecsClient, containerPort, albTargetGroupArn)
 
         logger.info("Starting Task...")
         try {
-            val response = ecsClient.runTask(createRunTaskRequestWithOverides(userName,emrClusterHostName,jupyterMemory,jupyterCpu,ecsClusterName))
+            val response = ecsClient.runTask(createRunTaskRequestWithOverrides(userName, emrClusterHostName, jupyterMemory, jupyterCpu, ecsClusterName))
             logger.info("response.tasks = ${response.tasks()}")
         } catch (e: Exception) {
             logger.error("Error while processing the run task request", e)
@@ -94,34 +94,17 @@ class TaskDeploymentService {
         }
     }
 
-    fun createRunTaskRequestWithOverides(userName: String,emrClusterHostName: String,jupyterMemory: Int,jupyterCpu: Int,ecsClusterName: String):RunTaskRequest{
-        val userName = KeyValuePair.builder()
-                .name("user_name")
-                .value(userName)
-                .build()
+    private fun createRunTaskRequestWithOverrides(username: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, ecsClusterName: String): RunTaskRequest {
+        val usernamePair = "USER" to username
+        val hostnamePair = "EMR_HOST_NAME" to emrHostname
 
-        val emrClusterHostName= KeyValuePair.builder()
-                .name("emr_cluster_host_name")
-                .value(emrClusterHostName)
-                .build()
-
-        val chromeOverride= ContainerOverride.builder()
-                .name("headless_chrome")
-                .environment(userName)
-                .build()
-        val jupyterOverride= ContainerOverride.builder()
-                .name("jupyterHub")
-                .environment(userName, emrClusterHostName)
-                .cpu(jupyterCpu)
-                .memory(jupyterMemory)
-                .build()
-        val guacDOverride = ContainerOverride.builder()
-                .name("guacd")
-                .environment(userName)
-                .build()
+        val chrome = containerOverrideBuilder("headless_chrome", usernamePair).build()
+        val guacd = containerOverrideBuilder("guacd", usernamePair).build()
+        // Jupyter also has configurable resources
+        val jupyter = containerOverrideBuilder("jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
 
         val overrides = TaskOverride.builder()
-                .containerOverrides(guacDOverride, chromeOverride, jupyterOverride)
+                .containerOverrides(guacd, chrome, jupyter)
                 .build()
 
         return RunTaskRequest.builder()
@@ -130,6 +113,17 @@ class TaskDeploymentService {
                 .overrides(overrides)
                 .taskDefinition("orchestration-service-ui-service")
                 .build()
+    }
+
+    /**
+     * Helper method to wrap a container name and set of overrides into an incomplete [ContainerOverride.Builder] for
+     * later consumption.
+     */
+    private fun containerOverrideBuilder(containerName: String, vararg overrides: Pair<String, String>): ContainerOverride.Builder {
+        val overrideKeyPairs = overrides.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
+        return ContainerOverride.builder()
+                .name(containerName)
+                .environment(overrideKeyPairs)
     }
 }
 
