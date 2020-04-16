@@ -50,7 +50,7 @@ module "ecs-fargate-service" {
   name_prefix     = var.name_prefix
   region          = var.region
   vpc_id          = data.terraform_remote_state.emr_cluster_broker_infra.outputs.vpc.aws_vpc.id
-  private_subnets = data.terraform_remote_state.infra.outputs.networking.aws_subnets_private.*.id
+  private_subnets = data.terraform_remote_state.emr_cluster_broker_infra.outputs.vpc.aws_subnets_private.*.id
 
   ecs_cluster_name        = data.aws_ecs_cluster.ecs_main_cluster.cluster_name
   ecs_cluster_arn         = data.aws_ecs_cluster.ecs_main_cluster.arn

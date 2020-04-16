@@ -1,10 +1,18 @@
 resource "aws_ecs_task_definition" "service" {
-  family                = "${var.name_prefix}-analytical-workspace"
-  execution_role_arn    = aws_iam_role.task_execution_iam_role.arn
-  task_role_arn         = aws_iam_role.ui_task_iam_role.arn
+  family                = "${var.name_prefix}-ui-service"
+  execution_role_arn    = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn         = aws_iam_role.ecs_task_role.arn
   network_mode          = "bridge"
   container_definitions = <<TASK_DEFINITION
       [
+      {
+
+          "name": "jupyterHub",
+          "image": "${var.jupyterhub_image}",
+          "cpu": 512,
+          "memory": 512,
+          "essential": true
+       },
       {
           "name": "headless_chrome",
           "image" : "${var.chrome_image}",
@@ -13,14 +21,6 @@ resource "aws_ecs_task_definition" "service" {
           "essential": true,
           "links":["jupyterHub"]
       },
-      {
-
-          "name": "jupyterHub",
-          "image": "${var.jupyterhub_image}",
-          "cpu": 512,
-          "memory": 512,
-          "essential": true
-         },
       {
           "name": "guacd",
           "image": "${var.guacd_image}",
