@@ -25,7 +25,7 @@ module "ecs-fargate-task-definition" {
   environment = [
     {
       name  = "orchestrationService.user_container_task_definition"
-      value = "${var.name_prefix}-ui-service"
+      value = "${var.name_prefix}-analytical-workspace"
     },
     {
       name  = "orchestrationService.load_balancer_name"

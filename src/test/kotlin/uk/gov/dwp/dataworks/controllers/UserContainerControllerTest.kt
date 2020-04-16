@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyString
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -14,14 +15,11 @@ import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import uk.gov.dwp.dataworks.services.AuthenticationService
-import uk.gov.dwp.dataworks.services.ConfigurationService
-import uk.gov.dwp.dataworks.services.TaskDeploymentService
+import uk.gov.dwp.dataworks.services.*
 
 @RunWith(SpringRunner::class)
 @WebMvcTest(UserContainerController::class)
-
-class UserContainerControllerTest{
+class UserContainerControllerTest {
     @Autowired
     private lateinit var mvc: MockMvc
 
@@ -31,11 +29,14 @@ class UserContainerControllerTest{
     private lateinit var configService: ConfigurationService
     @MockBean
     private lateinit var taskDeploymentService: TaskDeploymentService
+    @MockBean
+    private lateinit var existingUserServiceCheck: ExistingUserServiceCheck
 
 
     @BeforeEach
     fun setup() {
         whenever(authService.validate(any())).thenReturn(mock<DecodedJWT>())
+        whenever(existingUserServiceCheck.check(anyString(), anyString())).thenReturn(false)
     }
 
     @Test
@@ -43,9 +44,9 @@ class UserContainerControllerTest{
         mvc.perform(MockMvcRequestBuilders.get("/deployusercontainers"))
                 .andExpect(MockMvcResultMatchers.status().isMethodNotAllowed)
     }
+
     @Test
     fun `200 returned with well formed request`() {
-        whenever(authService.validate(any())).thenReturn(mock<DecodedJWT>())
         mvc.perform(MockMvcRequestBuilders.post("/deployusercontainers")
                 .content("{\"ecsClusterName\": \"Test Cluster Name\","
                         + " \"userName\": \"Test User Name\"," +

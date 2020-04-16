@@ -24,10 +24,11 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	// AWS
-	implementation(platform("software.amazon.awssdk:bom:2.11.11"))
+	implementation(platform("software.amazon.awssdk:bom:2.11.12"))
 	implementation("software.amazon.awssdk:regions")
 	implementation("software.amazon.awssdk:codegen")
 	implementation("software.amazon.awssdk:elasticloadbalancingv2")
+	implementation("software.amazon.awssdk:iam")
 
 	// Spring
 	implementation("org.springframework.boot:spring-boot-starter-web")

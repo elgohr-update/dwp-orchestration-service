@@ -1,5 +1,5 @@
 resource "aws_ecs_task_definition" "service" {
-  family                = "${var.name_prefix}-ui-service"
+  family                = "${var.name_prefix}-analytical-workspace"
   execution_role_arn    = aws_iam_role.task_execution_iam_role.arn
   task_role_arn         = aws_iam_role.ui_task_iam_role.arn
   network_mode          = "bridge"

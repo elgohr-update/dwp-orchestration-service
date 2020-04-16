@@ -9,5 +9,6 @@ data class Model @JsonCreator constructor(
         val albName: String,
         val containerPort: Int = 443,
         val jupyterCpu: Int = 512,
-        val jupyterMemory: Int = 512
+        val jupyterMemory: Int = 512,
+        val additionalPermissions: List<String> = emptyList()
 )

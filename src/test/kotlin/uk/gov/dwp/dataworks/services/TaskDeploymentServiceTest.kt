@@ -1,12 +1,18 @@
 package uk.gov.dwp.dataworks.services
 
+import com.auth0.jwt.interfaces.DecodedJWT
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Assert
 import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit4.SpringRunner
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesResponse
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Rule
 import uk.gov.dwp.dataworks.Application
@@ -26,6 +32,11 @@ class TaskDeploymentServiceTest{
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
 
+    @BeforeEach
+    fun setup() {
+        whenever(authService.validate(any())).thenReturn(mock<DecodedJWT>())
+        whenever(configService.awsRegion).thenReturn(Region.EU_WEST_2)
+    }
 
     val nonConsecutiveCol : Collection<Rule> = listOf(Rule.builder().priority("0").build(), Rule.builder().priority("1").build(), Rule.builder().priority("3").build())
 
