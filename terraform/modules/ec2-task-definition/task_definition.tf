@@ -11,7 +11,7 @@ resource "aws_ecs_task_definition" "service" {
           "cpu": 256,
           "memory": 256,
           "essential": true,
-          "links":["name:jupyterHub"]
+          "links":["jupyterHub"]
       },
       {
 
@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "service" {
           "cpu": 128,
           "memory": 128,
           "essential": true,
-          "links":["name:headless_chrome"],
+          "links":["headless_chrome"],
           "portMappings": [
             {
               "containerPort": 4822,
