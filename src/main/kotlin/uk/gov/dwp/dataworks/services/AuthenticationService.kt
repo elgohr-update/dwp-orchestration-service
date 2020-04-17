@@ -6,8 +6,11 @@ import com.auth0.jwk.UrlJwkProvider
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.net.URL
 import java.security.interfaces.RSAPublicKey
 import javax.annotation.PostConstruct
@@ -17,6 +20,9 @@ import javax.annotation.PostConstruct
  */
 @Service
 class AuthenticationService {
+    companion object {
+        val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(AuthenticationService::class.java))
+    }
 
     @Autowired
     private lateinit var configService: ConfigurationService;
@@ -29,6 +35,7 @@ class AuthenticationService {
         val userPoolId: String = configService.getStringConfig(ConfigKey.COGNITO_USER_POOL_ID)
         issuerUrl = "https://cognito-idp.${configService.awsRegion}.amazonaws.com/$userPoolId"
         jwkProvider = UrlJwkProvider(URL("$issuerUrl/.well-known/jwks.json"))
+        logger.info("initialised JWK Provider", "user_pool_id" to userPoolId)
     }
 
     fun validate(jwtToken: String): DecodedJWT {
@@ -40,9 +47,19 @@ class AuthenticationService {
             else -> throw JwkException("Unsupported JWK algorithm")
         }
 
-        return JWT.require(algorithm)
+        val decodedJwt = JWT.require(algorithm)
                 .withIssuer(issuerUrl)
                 .build()
                 .verify(userJwt)
+        logger.info("Validated JWT successfully", "jwt_id" to decodedJwt.id, "user_name" to cognitoUsernameFromJwt(userJwt))
+        return decodedJwt
+    }
+
+    /**
+     * Helper method to extract the Cognito username from a JWT Payload.
+     */
+    fun cognitoUsernameFromJwt(jwt: DecodedJWT): String {
+        val tokenJson = ObjectMapper().readTree(jwt.payload)
+        return tokenJson.get("cognito:username").asText()
     }
 }

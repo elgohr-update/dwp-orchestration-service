@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.regions.Region
-import uk.gov.dwp.dataworks.exceptions.SystemArgumentException
+import uk.gov.dwp.dataworks.SystemArgumentException
 import uk.gov.dwp.dataworks.services.ConfigKey.AWS_REGION
 
 /**

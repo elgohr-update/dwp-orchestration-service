@@ -47,6 +47,5 @@ class ConnectionController {
     @ResponseStatus(value = HttpStatus.UNAUTHORIZED, reason = "Invalid authentication token")
     fun handleInvalidToken() {
         // Do nothing - annotations handle response
-        // TODO: add logging
     }
 }
