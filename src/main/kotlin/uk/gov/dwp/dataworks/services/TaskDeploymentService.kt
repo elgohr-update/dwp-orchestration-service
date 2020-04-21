@@ -118,15 +118,34 @@ class TaskDeploymentService {
         val usernamePair = "USER" to userName
         val hostnamePair = "EMR_HOST_NAME" to emrHostname
 
-        logger.info("Overriding container env vars", usernamePair, hostnamePair)
+        val screenSize = 1920 to 1080
+        val chromeOptsPair = "CHROME_OPTS" to arrayOf(
+            "--no-sandbox",
+            "--window-position=0,0",
+            "--force-device-scale-factor=1",
+            "--incognito",
+            "--noerrdialogs",
+            "--disable-translate",
+            "--no-first-run",
+            "--fast",
+            "--fast-start",
+            "--disable-infobars",
+            "--disable-features=TranslateUI",
+            "--disk-cache-dir=/dev/null",
+            "--test-type https://jupyterHub:8443",
+            "--kiosk",
+            "--window-size=${screenSize.toList().joinToString(",")}"
+        ).joinToString(" ")
+        val vncScreenSizePair = "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")
 
-        val chrome = containerOverrideBuilder("headless_chrome", usernamePair).build()
+        val chrome = containerOverrideBuilder("headless_chrome", chromeOptsPair, vncScreenSizePair).build()
         val guacd = containerOverrideBuilder("guacd", usernamePair).build()
+        val guacamole = containerOverrideBuilder("guacamole", "CLIENT_USERNAME" to userName).build()
         // Jupyter also has configurable resources
         val jupyter = containerOverrideBuilder("jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
 
         val overrides = TaskOverride.builder()
-                .containerOverrides(guacd, chrome, jupyter)
+                .containerOverrides(guacd, guacamole, chrome, jupyter)
                 .taskRoleArn(createTaskRoleOverride(additionalPermissions, userName))
                 .build()
 
