@@ -56,7 +56,7 @@ resource "aws_ecs_task_definition" "service" {
       },
       {
           "name": "guacamole",
-          "image": "",
+          "image": "${var.guacamole_client_image}",
           "cpu": 256,
           "memory": 256,
           "essential": true,

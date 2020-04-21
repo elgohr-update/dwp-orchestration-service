@@ -12,5 +12,5 @@ locals {
       "protocol"      = "HTTPS"
     },
   ]
-  ecr_endpoint = "${local.management_account[local.environment]}.dkr.ecr.${var.region}.amazonaws.com"
+  ecr_endpoint = "${local.account[local.management_account[local.environment]]}.dkr.ecr.${var.region}.amazonaws.com"
 }
