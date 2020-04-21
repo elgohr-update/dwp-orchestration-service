@@ -1,6 +1,8 @@
 package uk.gov.dwp.dataworks.services
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecs.EcsClient
@@ -34,6 +36,14 @@ import uk.gov.dwp.dataworks.logging.DataworksLogger
 
 @Service
 class TaskDeploymentService {
+    @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
+    lateinit var taskAssumeRoleDocument: Resource
+    private lateinit var taskAssumeRoleString: String
+
+    @Value("classpath:policyDocuments/taskRolePolicy.json")
+    lateinit var taskRolePolicyDocument: Resource
+    private lateinit var taskRolePolicyString: String
+
     companion object {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
@@ -46,7 +56,7 @@ class TaskDeploymentService {
 
         try {
             val service = ecsClient.createService(serviceBuilder).service()
-            logger.info("Created ECS Service", "cluster_arn" to  service.clusterArn(), "service_name" to service.serviceName(), "task_definition" to service.taskDefinition())
+            logger.info("Created ECS Service", "cluster_arn" to service.clusterArn(), "service_name" to service.serviceName(), "task_definition" to service.taskDefinition())
         } catch (e: Exception) {
             logger.error("Failed to create ECS Service", e, "cluster_arn" to serviceBuilder.cluster(), "service_name" to serviceBuilder.serviceName(), "task_definition" to serviceBuilder.taskDefinition())
             throw FailedToExecuteCreateServiceRequestException("Error while processing the Create Service request", e)
@@ -61,7 +71,7 @@ class TaskDeploymentService {
         throw UpperRuleLimitReachedException("The upper limit of 1000 rules has been reached on this listener.")
     }
 
-    fun taskDefinitionWithOverride(ecsClusterName: String, emrClusterHostName: String, albName :String, userName: String, containerPort : Int , jupyterCpu : Int , jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun taskDefinitionWithOverride(ecsClusterName: String, emrClusterHostName: String, albName: String, userName: String, containerPort: Int, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
 
         val ecsClient = EcsClient.builder().region(configurationService.awsRegion).build()
         val albClient = ElasticLoadBalancingV2Client.builder().region(configurationService.awsRegion).build()
@@ -75,7 +85,7 @@ class TaskDeploymentService {
         val tgRequest = CreateTargetGroupRequest.builder().name("$userName-target-group").protocol("HTTPS").vpcId(albResponse.loadBalancers()[0].vpcId()).port(containerPort).build()
         val targetGroupResponse = albClient.createTargetGroup(tgRequest)
 
-        logger.info("Created target groups", "target_groups" to targetGroupResponse.targetGroups().joinToString{ it.targetGroupName() })
+        logger.info("Created target groups", "target_groups" to targetGroupResponse.targetGroups().joinToString { it.targetGroupName() })
 
         val albTargetGroupRequest = albClient.describeTargetGroups(DescribeTargetGroupsRequest.builder().names("$userName-target-group").build())
         val albTargetGroupArn = albTargetGroupRequest.targetGroups()[0].targetGroupArn()
@@ -92,14 +102,14 @@ class TaskDeploymentService {
         createService(ecsClusterName, userName, ecsClient, containerPort, albTargetGroupArn)
 
         try {
-            val response = ecsClient.runTask(createRunTaskRequestWithOverrides(userName,emrClusterHostName,jupyterMemory,jupyterCpu,ecsClusterName,additionalPermissions))
+            val response = ecsClient.runTask(createRunTaskRequestWithOverrides(userName, emrClusterHostName, jupyterMemory, jupyterCpu, ecsClusterName, additionalPermissions))
             logger.info("ECS tasks run", "instance_arns" to response.tasks().joinToString { it.containerInstanceArn() }, "task_groups" to response.tasks().joinToString { it.group() })
         } catch (e: Exception) {
             logger.error("Error running ECS tasks", e)
             throw FailedToExecuteRunTaskRequestException("Error while processing the Run Task request", e)
         }
     }
-    
+
     private fun createRunTaskRequestWithOverrides(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, ecsClusterName: String, additionalPermissions: List<String>): RunTaskRequest {
         val usernamePair = "USER" to userName
         val hostnamePair = "EMR_HOST_NAME" to emrHostname
@@ -135,52 +145,33 @@ class TaskDeploymentService {
                 .environment(overrideKeyPairs)
     }
 
-    fun createTaskRoleOverride(list: List<String>, userName: String): String{
+    private fun createTaskRoleOverride(additionalPermissions: List<String>, userName: String): String {
         val iamClient = IamClient.builder().region(Region.AWS_GLOBAL).build()
-        fun additionalPermissions(): String{
-            val listToString = StringBuilder()
-            if(list.isNotEmpty()) for (i in list) listToString.append(",\"$i\"")
-            return listToString.toString()
-        }
-        val assumeRolePolicyDocument = "{" +
-                "  \"Version\": \"2012-10-17\"," +
-                "  \"Statement\": [" +
-                "    {" +
-                "        \"Effect\": \"Allow\"," +
-                "        \"Action\": [" +
-                "           \"sts:AssumeRole\"" +
-                "       ]," +
-                "       \"Principal\": {"  +
-                "           \"Service\": ["  +
-                "           \"ecs-tasks.amazonaws.com\"" +
-                "           ]" +
-                "        }" +
-                "     }" +
-                "   ]" +
-                "}"
+        parsePolicyDocuments(additionalPermissions)
 
-        val taskRolePolicyDocument = "{" +
-                "  \"Version\": \"2012-10-17\"," +
-                "  \"Statement\": [" +
-                "     {" +
-                "        \"Effect\": \"Allow\"," +
-                "        \"Action\": [" +
-                "            \"ecr:BatchCheckLayerAvailability\"," +
-                "            \"ecr:GetDownloadUrlForLayer\"," +
-                "            \"ecr:BatchGetImage\"," +
-                "            \"logs:CreateLogStream\"," +
-                "            \"logs:PutLogEvents\"" +
-                additionalPermissions() +
-                "       ]," +
-                "       \"Resource\": \"*\"" +
-                "      }" +
-                "   ]" +
-                "}"
+        val userPolicyDocument = CreatePolicyRequest.builder().policyDocument(taskRolePolicyString).policyName("$userName-task-role-document").build()
+        val userTaskPolicy = iamClient.createPolicy(userPolicyDocument).policy()
+        val iamRole = iamClient.createRole(CreateRoleRequest.builder().assumeRolePolicyDocument(taskAssumeRoleString).roleName("$userName-iam-role").build()).role()
 
-        val userPolicyDocument = CreatePolicyRequest.builder().policyDocument(taskRolePolicyDocument).policyName("$userName-task-role-document").build()
-        val userTaskPolicy = iamClient.createPolicy(userPolicyDocument)
-        val iamRole = iamClient.createRole(CreateRoleRequest.builder().assumeRolePolicyDocument(assumeRolePolicyDocument).roleName("$userName-iam-role").build())
-        iamClient.attachRolePolicy(AttachRolePolicyRequest.builder().policyArn(userTaskPolicy.policy().arn()).roleName(iamRole.role().roleName()).build())
-        return iamRole.role().arn()
+        iamClient.attachRolePolicy(AttachRolePolicyRequest.builder().policyArn(userTaskPolicy.arn()).roleName(iamRole.roleName()).build())
+        logger.info("created iam roles", "role_name" to iamRole.roleName(), "role_arn" to iamRole.arn())
+        return iamRole.arn()
+    }
+
+    /**
+     * Helper method to initialise the lateinit vars [taskAssumeRoleString] and [taskRolePolicyString] by
+     * converting the associated `@Value` parameters to Strings and replacing `ADDITIONAL_PERMISSIONS` in
+     * [taskRolePolicyString] with the provided [additionalPermissions]
+     *
+     * @return [Pair] of [taskRolePolicyString] to [taskAssumeRoleString] for ease of access.
+     */
+    fun parsePolicyDocuments(additionalPermissions: List<String>): Pair<String, String> {
+        logger.info("Adding permissions to containers", "permissions" to additionalPermissions.joinToString())
+        val permissionsJson = additionalPermissions.joinToString(prefix = "\"", separator = "\",\"", postfix = "\"")
+
+        taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
+        taskRolePolicyString = taskRolePolicyDocument.inputStream.bufferedReader().use { it.readText() }
+                .replace("ADDITIONAL_PERMISSIONS", permissionsJson)
+        return taskRolePolicyString to taskAssumeRoleString
     }
 }
