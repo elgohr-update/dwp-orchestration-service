@@ -29,7 +29,7 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.load_balancer_name"
-      value = "${var.name_prefix}-lb"
+      value = "aws-analytical-env-lb"
     },
     {
       name  = "orchestrationService.aws_region"
@@ -38,6 +38,18 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.cognito_user_pool_id"
       value = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito.user_pool_id
+    },
+    {
+      name  = "orchestrationService.ecs_cluster_name"
+      value = "${var.name_prefix}-user-host"
+    },
+    {
+      name  = "orchestrationService.user_container_url"
+      value = "aws-analytical-env.${local.root_dns_prefix[local.environment]}.${local.parent_domain_name[local.environment]}"
+    },
+    {
+      name  = "orchestrationService.user_container_port"
+      value = 8443
     }
   ]
 }

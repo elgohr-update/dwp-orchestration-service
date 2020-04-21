@@ -1,5 +1,6 @@
 package uk.gov.dwp.dataworks.services
 
+import com.auth0.jwt.interfaces.DecodedJWT
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -15,7 +16,9 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesResponse
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Rule
 import uk.gov.dwp.dataworks.Application
-import java.util.ArrayList
+import uk.gov.dwp.dataworks.model.JWTObject
+import java.lang.Exception
+import java.util.*
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class])
@@ -31,9 +34,12 @@ class TaskDeploymentServiceTest {
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
 
+    private val decodedJWT = mock<DecodedJWT>()
+
     @BeforeEach
     fun setup() {
-        whenever(authService.validate(any())).thenReturn(mock())
+        val jwtObject = JWTObject(decodedJWT, "test_user")
+        whenever(authService.validate(any())).thenReturn(jwtObject)
         whenever(configService.awsRegion).thenReturn(Region.EU_WEST_2)
     }
 
@@ -71,6 +77,11 @@ class TaskDeploymentServiceTest {
         val taskRolePolicyString = parsedDocs.first
         assertThat(taskRolePolicyString).doesNotContain("ADDITIONAL_PERMISSIONS")
         assertThat(taskRolePolicyString).contains("\"permissionOne\",\"permissionTwo\"")
+    }
+
+    @Test (expected = Exception::class)
+    fun testPriorityNumberFor1000PlusExpectError(){
+        taskDeploymentService.getVacantPriorityValue(createDescribeRulesResponse(create1000()))
     }
 
     fun createDescribeRulesResponse(array: Collection<Rule>): DescribeRulesResponse {

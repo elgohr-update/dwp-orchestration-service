@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import uk.gov.dwp.dataworks.logging.DataworksLogger
+import uk.gov.dwp.dataworks.model.JWTObject
 import java.net.URL
 import java.security.interfaces.RSAPublicKey
 import javax.annotation.PostConstruct
@@ -38,7 +39,7 @@ class AuthenticationService {
         logger.info("initialised JWK Provider", "user_pool_id" to userPoolId)
     }
 
-    fun validate(jwtToken: String): DecodedJWT {
+    fun validate(jwtToken: String): JWTObject {
         val userJwt = JWT.decode(jwtToken)
         val jwk = jwkProvider.get(userJwt.keyId)
         val publicKey = jwk.publicKey as? RSAPublicKey ?: throw Exception("Invalid key type")
@@ -47,12 +48,12 @@ class AuthenticationService {
             else -> throw JwkException("Unsupported JWK algorithm")
         }
 
-        val decodedJwt = JWT.require(algorithm)
+        val jwt = JWT.require(algorithm)
                 .withIssuer(issuerUrl)
                 .build()
                 .verify(userJwt)
-        logger.info("Validated JWT successfully", "jwt_id" to decodedJwt.id, "user_name" to cognitoUsernameFromJwt(userJwt))
-        return decodedJwt
+
+        return JWTObject(jwt, cognitoUsernameFromJwt(userJwt))
     }
 
     /**
