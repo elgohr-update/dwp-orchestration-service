@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import uk.gov.dwp.dataworks.JWTObject
 import uk.gov.dwp.dataworks.logging.DataworksLogger
-import uk.gov.dwp.dataworks.model.JWTObject
 import java.net.URL
 import java.security.interfaces.RSAPublicKey
 import javax.annotation.PostConstruct
@@ -26,15 +26,15 @@ class AuthenticationService {
     }
 
     @Autowired
-    private lateinit var configService: ConfigurationService;
+    private lateinit var configurationResolver: ConfigurationResolver;
 
     private lateinit var jwkProvider: JwkProvider
     private lateinit var issuerUrl: String
 
     @PostConstruct
     fun init() {
-        val userPoolId: String = configService.getStringConfig(ConfigKey.COGNITO_USER_POOL_ID)
-        issuerUrl = "https://cognito-idp.${configService.awsRegion}.amazonaws.com/$userPoolId"
+        val userPoolId: String = configurationResolver.getStringConfig(ConfigKey.COGNITO_USER_POOL_ID)
+        issuerUrl = "https://cognito-idp.${configurationResolver.awsRegion}.amazonaws.com/$userPoolId"
         jwkProvider = UrlJwkProvider(URL("$issuerUrl/.well-known/jwks.json"))
         logger.info("initialised JWK Provider", "user_pool_id" to userPoolId)
     }

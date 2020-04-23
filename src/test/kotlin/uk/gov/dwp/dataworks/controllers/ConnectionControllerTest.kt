@@ -16,15 +16,15 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import uk.gov.dwp.dataworks.model.JWTObject
-import uk.gov.dwp.dataworks.services.ConfigurationService
+import uk.gov.dwp.dataworks.JWTObject
+import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import uk.gov.dwp.dataworks.services.ConfigKey
 import uk.gov.dwp.dataworks.services.AuthenticationService
 import uk.gov.dwp.dataworks.services.ExistingUserServiceCheck
 import uk.gov.dwp.dataworks.services.TaskDeploymentService
 
 @RunWith(SpringRunner::class)
-@WebMvcTest(ConnectionController::class, ConfigurationService::class)
+@WebMvcTest(ConnectionController::class, ConfigurationResolver::class)
 class ConnectionControllerTest {
     @Autowired
     private lateinit var mvc: MockMvc

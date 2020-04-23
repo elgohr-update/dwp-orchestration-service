@@ -16,9 +16,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesResponse
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Rule
 import uk.gov.dwp.dataworks.Application
-import uk.gov.dwp.dataworks.model.JWTObject
-import java.lang.Exception
-import java.util.*
+import uk.gov.dwp.dataworks.JWTObject
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class])
@@ -26,7 +24,7 @@ import java.util.*
 class TaskDeploymentServiceTest {
 
     @Autowired
-    private lateinit var configService: ConfigurationService
+    private lateinit var configurationResolver: ConfigurationResolver
 
     @Autowired
     private lateinit var authService: AuthenticationService
@@ -40,26 +38,7 @@ class TaskDeploymentServiceTest {
     fun setup() {
         val jwtObject = JWTObject(decodedJWT, "test_user")
         whenever(authService.validate(any())).thenReturn(jwtObject)
-        whenever(configService.awsRegion).thenReturn(Region.EU_WEST_2)
-    }
-
-    val nonConsecutiveCol: Collection<Rule> = listOf(Rule.builder().priority("0").build(), Rule.builder().priority("1").build(), Rule.builder().priority("3").build())
-
-    @Test
-    fun `Empty load balancer priorities returns 0`() {
-        val actual = taskDeploymentService.getVacantPriorityValue(createDescribeRulesResponse(ArrayList<Rule>()))
-        assertThat(actual).isEqualTo(0)
-    }
-
-    @Test
-    fun `Non-consecutive load balancer priorities sets lowest available value`() {
-        val actual = taskDeploymentService.getVacantPriorityValue(createDescribeRulesResponse(nonConsecutiveCol))
-        assertThat(actual).isEqualTo(2)
-    }
-
-    @Test(expected = Exception::class)
-    fun `Load balancer priority of 1000 should error`() {
-        taskDeploymentService.getVacantPriorityValue(createDescribeRulesResponse(create1000()))
+        whenever(configurationResolver.awsRegion).thenReturn(Region.EU_WEST_2)
     }
 
     @Test
@@ -77,11 +56,6 @@ class TaskDeploymentServiceTest {
         val taskRolePolicyString = parsedDocs.first
         assertThat(taskRolePolicyString).doesNotContain("ADDITIONAL_PERMISSIONS")
         assertThat(taskRolePolicyString).contains("\"permissionOne\",\"permissionTwo\"")
-    }
-
-    @Test (expected = Exception::class)
-    fun testPriorityNumberFor1000PlusExpectError(){
-        taskDeploymentService.getVacantPriorityValue(createDescribeRulesResponse(create1000()))
     }
 
     fun createDescribeRulesResponse(array: Collection<Rule>): DescribeRulesResponse {

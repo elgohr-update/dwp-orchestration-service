@@ -2,7 +2,7 @@ package uk.gov.dwp.dataworks.services
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.env.Environment
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import software.amazon.awssdk.regions.Region
 import uk.gov.dwp.dataworks.SystemArgumentException
 import uk.gov.dwp.dataworks.services.ConfigKey.AWS_REGION
@@ -12,8 +12,8 @@ import uk.gov.dwp.dataworks.services.ConfigKey.AWS_REGION
  * variables required at runtime without the need for a static application.properties file. Thus,
  * this means we can pass secrets to the API and not commit them to the code base.
  */
-@Service
-class ConfigurationService {
+@Component
+class ConfigurationResolver {
     @Autowired
     private lateinit var env: Environment
 

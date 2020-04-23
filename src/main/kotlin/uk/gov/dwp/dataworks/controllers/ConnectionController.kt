@@ -8,15 +8,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
-import uk.gov.dwp.dataworks.controllers.ConnectionController.Companion.logger
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
+import uk.gov.dwp.dataworks.DeployRequest
 import uk.gov.dwp.dataworks.logging.DataworksLogger
-import uk.gov.dwp.dataworks.model.Model
-import uk.gov.dwp.dataworks.services.ConfigurationService
-import uk.gov.dwp.dataworks.services.TaskDeploymentService
-import uk.gov.dwp.dataworks.services.ExistingUserServiceCheck
 import uk.gov.dwp.dataworks.services.AuthenticationService
 import uk.gov.dwp.dataworks.services.ConfigKey
+import uk.gov.dwp.dataworks.services.ConfigurationResolver
+import uk.gov.dwp.dataworks.services.ExistingUserServiceCheck
+import uk.gov.dwp.dataworks.services.TaskDeploymentService
 
 @RestController
 class ConnectionController {
@@ -31,7 +35,7 @@ class ConnectionController {
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
     @Autowired
-    private lateinit var configService: ConfigurationService
+    private lateinit var configurationResolver: ConfigurationResolver
 
     @Operation(summary = "Connect to Analytical Environment",
             description = "Provisions the Analytical Environment for a user and returns the required information to connect")
@@ -41,7 +45,7 @@ class ConnectionController {
     ])
     @PostMapping("/connect")
     @ResponseStatus(HttpStatus.OK)
-    fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: uk.gov.dwp.dataworks.model.Model): String {
+    fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): String {
         val jwtObject = authService.validate(token)
         return handleRequest(jwtObject.userName, requestBody)
     }
@@ -54,7 +58,7 @@ class ConnectionController {
     ])
 
     @PostMapping("/deployusercontainers")
-    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestBody requestBody: Model): String {
+    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestBody requestBody: DeployRequest): String {
         return handleRequest(userName, requestBody)
     }
 
@@ -76,18 +80,18 @@ class ConnectionController {
         // Do nothing - annotations handle response
     }
 
-    fun handleRequest(userName: String, requestBody: Model):String {
-        if (existingUserServiceCheck.check(userName, configService.getStringConfig(ConfigKey.ECS_CLUSTER_NAME))){
-            ConnectionController.logger.info("Redirecting user to running containers, as they exist")
+    fun handleRequest(userName: String, requestBody: DeployRequest):String {
+        if (existingUserServiceCheck.check(userName, configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME))){
+            logger.info("Redirecting user to running containers, as they exist")
         } else {
-            taskDeploymentService.taskDefinitionWithOverride(
+            taskDeploymentService.runContainers(
                     userName,
                     requestBody.jupyterCpu,
                     requestBody.jupyterMemory,
                     requestBody.additionalPermissions
             )
-            ConnectionController.logger.info("Submitted request", "cluster_name" to configService.getStringConfig(ConfigKey.ECS_CLUSTER_NAME), "user_name" to userName)
+            logger.info("Submitted request", "cluster_name" to configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME), "user_name" to userName)
         }
-        return "${configService.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}"
+        return "${configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}"
     }
 }

@@ -1,41 +1,23 @@
 package uk.gov.dwp.dataworks.services
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.ContainerOverride
-import software.amazon.awssdk.services.ecs.model.CreateServiceRequest
-import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.LoadBalancer
-import software.amazon.awssdk.services.ecs.model.RunTaskRequest
-import software.amazon.awssdk.services.ecs.model.TaskOverride
-import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.Action
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateRuleRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateTargetGroupRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesResponse
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.ForwardActionConfig
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.PathPatternConditionConfig
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.RuleCondition
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroupTuple
-import software.amazon.awssdk.services.iam.IamClient
-import software.amazon.awssdk.services.iam.model.AttachRolePolicyRequest
-import software.amazon.awssdk.services.iam.model.CreatePolicyRequest
-import software.amazon.awssdk.services.iam.model.CreateRoleRequest
-import uk.gov.dwp.dataworks.FailedToExecuteCreateServiceRequestException
-import uk.gov.dwp.dataworks.FailedToExecuteRunTaskRequestException
-import uk.gov.dwp.dataworks.UpperRuleLimitReachedException
+import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 
 @Service
 class TaskDeploymentService {
+    @Autowired
+    private lateinit var awsCommunicator: AwsCommunicator
+
+    @Autowired
+    private lateinit var configurationResolver: ConfigurationResolver
+
     @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
     lateinit var taskAssumeRoleDocument: Resource
     private lateinit var taskAssumeRoleString: String
@@ -48,137 +30,72 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    val configurationService = ConfigurationService()
+    fun runContainers(userName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+        // Retrieve required params from environment
+        val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
+        val emrClusterHostName = configurationResolver.getStringConfig(ConfigKey.EMR_CLUSTER_HOST_NAME)
+        val albName = configurationResolver.getStringConfig(ConfigKey.LOAD_BALANCER_NAME)
+        val ecsClusterName = configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME)
 
-    private fun createService(ecsClusterName: String, userName: String, ecsClient: EcsClient, containerPort: Int, targetGroupArn: String) {
-        val alb: LoadBalancer = LoadBalancer.builder().targetGroupArn(targetGroupArn).containerPort(containerPort).build()
-        val serviceBuilder = CreateServiceRequest.builder().cluster(ecsClusterName).loadBalancers(alb).serviceName("${userName}-analytical-workspace").taskDefinition(configurationService.getStringConfig(ConfigKey.USER_CONTAINER_TASK_DEFINITION)).loadBalancers(alb).desiredCount(1).build()
+        // Load balancer & Routing
+        val loadBalancer = awsCommunicator.getLoadBalancerByName(albName)
+        val listener = awsCommunicator.getAlbListenerByPort(loadBalancer.loadBalancerArn(), containerPort)
+        val targetGroup = awsCommunicator.createTargetGroup(loadBalancer.vpcId(), "$userName-target-group", containerPort)
+        // There are 2 distinct LoadBalancer classes in the AWS SDK - ELBV2 and ECS. They represent the same LB but in different ways.
+        // The following is the load balancer needed to create an ECS service.
+        val ecsLoadBalancer = LoadBalancer.builder()
+                .targetGroupArn(targetGroup.targetGroupArn())
+                .loadBalancerName(loadBalancer.loadBalancerName())
+                .containerName("guacamole")
+                .containerPort(containerPort)
+                .build()
+        awsCommunicator.createAlbRoutingRule(listener.listenerArn(),targetGroup.targetGroupArn(),"/$userName/*")
 
-        try {
-            val service = ecsClient.createService(serviceBuilder).service()
-            logger.info("Created ECS Service", "cluster_arn" to service.clusterArn(), "service_name" to service.serviceName(), "task_definition" to service.taskDefinition())
-        } catch (e: Exception) {
-            logger.error("Failed to create ECS Service", e, "cluster_arn" to serviceBuilder.cluster(), "service_name" to serviceBuilder.serviceName(), "task_definition" to serviceBuilder.taskDefinition())
-            throw FailedToExecuteCreateServiceRequestException("Error while processing the Create Service request", e)
-        }
+        // IAM permissions
+        parsePolicyDocuments(additionalPermissions)
+        val iamPolicy = awsCommunicator.createIamPolicy("$userName-task-role-document", taskRolePolicyString)
+        val iamRole = awsCommunicator.createIamRole("$userName-iam-role", taskAssumeRoleString)
+        awsCommunicator.attachIamPolicyToRole(iamPolicy, iamRole)
+
+        // ECS
+        awsCommunicator.createEcsService(ecsClusterName, "${userName}-analytical-workspace", ecsLoadBalancer)
+        val containerOverrides = buildContainerOverrides(userName, emrClusterHostName, jupyterMemory, jupyterCpu)
+        val ecsTaskRequest = awsCommunicator.buildEcsTask(ecsClusterName, "orchestration-service-analytical-workspace", iamRole.arn(), containerOverrides)
+
+        awsCommunicator.runEcsTask(ecsTaskRequest)
     }
 
-    fun getVacantPriorityValue(rulesResponse: DescribeRulesResponse): Int {
-        val rulePriorities = rulesResponse.rules().map { it.priority() }.filter { it != "default" }.map { Integer.parseInt(it) }.toSet()
-        for (priority in 0..999) {
-            if (!rulePriorities.contains(priority)) return priority
-        }
-        throw UpperRuleLimitReachedException("The upper limit of 1000 rules has been reached on this listener.")
-    }
-
-    fun taskDefinitionWithOverride(userName: String, jupyterCpu : Int , jupyterMemory: Int, additionalPermissions: List<String>) {
-        val ecsClusterName = configurationService.getStringConfig(ConfigKey.ECS_CLUSTER_NAME)
-        val emrClusterHostName = configurationService.getStringConfig(ConfigKey.EMR_CLUSTER_HOST_NAME)
-        val albName = configurationService.getStringConfig(ConfigKey.LOAD_BALANCER_NAME)
-        val containerPort = Integer.parseInt(configurationService.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
-
-        val ecsClient = EcsClient.builder().region(configurationService.awsRegion).build()
-        val albClient = ElasticLoadBalancingV2Client.builder().region(configurationService.awsRegion).build()
-
-        val albRequest = DescribeLoadBalancersRequest.builder().names(albName).build()
-        val albResponse = albClient.describeLoadBalancers(albRequest)
-
-        val albListenerRequest = DescribeListenersRequest.builder().loadBalancerArn(albResponse.loadBalancers()[0].loadBalancerArn()).build()
-        val albListenerResponse = albClient.describeListeners(albListenerRequest)
-
-        val tgRequest = CreateTargetGroupRequest.builder().name("$userName-target-group").protocol("HTTPS").vpcId(albResponse.loadBalancers()[0].vpcId()).port(containerPort).build()
-        val targetGroupResponse = albClient.createTargetGroup(tgRequest)
-
-        logger.info("Created target groups", "target_groups" to targetGroupResponse.targetGroups().joinToString { it.targetGroupName() })
-
-        val albTargetGroupRequest = albClient.describeTargetGroups(DescribeTargetGroupsRequest.builder().names("$userName-target-group").build())
-        val albTargetGroupArn = albTargetGroupRequest.targetGroups()[0].targetGroupArn()
-
-        val pathPattern = PathPatternConditionConfig.builder().values("/$userName/*").build()
-        val albRuleCondition = RuleCondition.builder().field("path-pattern").pathPatternConfig(pathPattern).build()
-        val userTargetGroup = TargetGroupTuple.builder().targetGroupArn(albTargetGroupArn).build()
-        val forwardAction = ForwardActionConfig.builder().targetGroups(userTargetGroup).build()
-        val albRuleAction = Action.builder().type("forward").forwardConfig(forwardAction).build()
-
-        val rulesResponse = albClient.describeRules(DescribeRulesRequest.builder().listenerArn(albListenerResponse.listeners()[0].listenerArn()).build())
-        albClient.createRule(CreateRuleRequest.builder().listenerArn(albListenerResponse.listeners()[0].listenerArn()).priority(getVacantPriorityValue(rulesResponse)).conditions(albRuleCondition).actions(albRuleAction).build())
-
-        createService(ecsClusterName, userName, ecsClient, containerPort, albTargetGroupArn)
-
-        try {
-            val response = ecsClient.runTask(createRunTaskRequestWithOverrides(userName, emrClusterHostName, jupyterMemory, jupyterCpu, ecsClusterName, additionalPermissions))
-            logger.info("ECS tasks run", "instance_arns" to response.tasks().joinToString { it.containerInstanceArn() }, "task_groups" to response.tasks().joinToString { it.group() })
-        } catch (e: Exception) {
-            logger.error("Error running ECS tasks", e)
-            throw FailedToExecuteRunTaskRequestException("Error while processing the Run Task request", e)
-        }
-    }
-
-    private fun createRunTaskRequestWithOverrides(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, ecsClusterName: String, additionalPermissions: List<String>): RunTaskRequest {
+    private fun buildContainerOverrides(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int): List<ContainerOverride> {
         val usernamePair = "USER" to userName
         val hostnamePair = "EMR_HOST_NAME" to emrHostname
 
         val screenSize = 1920 to 1080
         val chromeOptsPair = "CHROME_OPTS" to arrayOf(
-            "--no-sandbox",
-            "--window-position=0,0",
-            "--force-device-scale-factor=1",
-            "--incognito",
-            "--noerrdialogs",
-            "--disable-translate",
-            "--no-first-run",
-            "--fast",
-            "--fast-start",
-            "--disable-infobars",
-            "--disable-features=TranslateUI",
-            "--disk-cache-dir=/dev/null",
-            "--test-type https://jupyterHub:8443",
-            "--kiosk",
-            "--window-size=${screenSize.toList().joinToString(",")}"
+                "--no-sandbox",
+                "--window-position=0,0",
+                "--force-device-scale-factor=1",
+                "--incognito",
+                "--noerrdialogs",
+                "--disable-translate",
+                "--no-first-run",
+                "--fast",
+                "--fast-start",
+                "--disable-infobars",
+                "--disable-features=TranslateUI",
+                "--disk-cache-dir=/dev/null",
+                "--test-type https://jupyterHub:8443",
+                "--kiosk",
+                "--window-size=${screenSize.toList().joinToString(",")}"
         ).joinToString(" ")
         val vncScreenSizePair = "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")
 
-        val chrome = containerOverrideBuilder("headless_chrome", chromeOptsPair, vncScreenSizePair).build()
-        val guacd = containerOverrideBuilder("guacd", usernamePair).build()
-        val guacamole = containerOverrideBuilder("guacamole", "CLIENT_USERNAME" to userName).build()
+        val chrome = awsCommunicator.buildContainerOverride("headless_chrome", chromeOptsPair, vncScreenSizePair).build()
+        val guacd = awsCommunicator.buildContainerOverride("guacd", usernamePair).build()
+        val guacamole = awsCommunicator.buildContainerOverride("guacamole", "CLIENT_USERNAME" to userName).build()
         // Jupyter also has configurable resources
-        val jupyter = containerOverrideBuilder("jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
+        val jupyter = awsCommunicator.buildContainerOverride("jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
 
-        val overrides = TaskOverride.builder()
-                .containerOverrides(guacd, guacamole, chrome, jupyter)
-                .taskRoleArn(createTaskRoleOverride(additionalPermissions, userName))
-                .build()
-
-        return RunTaskRequest.builder()
-                .cluster(ecsClusterName)
-                .launchType("EC2")
-                .overrides(overrides)
-                .taskDefinition("orchestration-service-analytical-workspace")
-                .build()
-    }
-
-    /**
-     * Helper method to wrap a container name and set of overrides into an incomplete [ContainerOverride.Builder] for
-     * later consumption.
-     */
-    private fun containerOverrideBuilder(containerName: String, vararg overrides: Pair<String, String>): ContainerOverride.Builder {
-        val overrideKeyPairs = overrides.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
-        return ContainerOverride.builder()
-                .name(containerName)
-                .environment(overrideKeyPairs)
-    }
-
-    private fun createTaskRoleOverride(additionalPermissions: List<String>, userName: String): String {
-        val iamClient = IamClient.builder().region(Region.AWS_GLOBAL).build()
-        parsePolicyDocuments(additionalPermissions)
-
-        val userPolicyDocument = CreatePolicyRequest.builder().policyDocument(taskRolePolicyString).policyName("$userName-task-role-document").build()
-        val userTaskPolicy = iamClient.createPolicy(userPolicyDocument).policy()
-        val iamRole = iamClient.createRole(CreateRoleRequest.builder().assumeRolePolicyDocument(taskAssumeRoleString).roleName("$userName-iam-role").build()).role()
-
-        iamClient.attachRolePolicy(AttachRolePolicyRequest.builder().policyArn(userTaskPolicy.arn()).roleName(iamRole.roleName()).build())
-        logger.info("created iam roles", "role_name" to iamRole.roleName(), "role_arn" to iamRole.arn())
-        return iamRole.arn()
+        return listOf(chrome, guacd, guacamole, jupyter)
     }
 
     /**

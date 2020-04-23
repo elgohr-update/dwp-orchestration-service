@@ -16,7 +16,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.context.junit4.SpringRunner
 import software.amazon.awssdk.services.ecs.model.DescribeServicesResponse
 import software.amazon.awssdk.services.ecs.model.Service
-import uk.gov.dwp.dataworks.model.JWTObject
+import uk.gov.dwp.dataworks.JWTObject
 
 @RunWith(SpringRunner::class)
 @WebMvcTest(ExistingUserServiceCheck::class)
@@ -28,7 +28,7 @@ class ExistingUserServiceCheckTest {
     private lateinit var authService: AuthenticationService
 
     @MockBean
-    private lateinit var configService: ConfigurationService
+    private lateinit var configurationResolver: ConfigurationResolver
 
     private val decodedJWT = mock<DecodedJWT>()
     private val testUserName = "testUser"

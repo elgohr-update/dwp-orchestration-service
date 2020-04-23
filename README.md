@@ -10,10 +10,9 @@ The service orchestrator for providing remote access into the analytical environ
   - `Authorisation`*
      
   Optional inputs for body of request are:
-  - `containerPorts`        - default : 443
   - `jupyterCpu`            - default : 512
   - `jupyterMemory `        - default : 512
-  - `additionalPermissions`** - default : null
+  - `additionalPermissions`** - default : empty list
   
      \* `Authorisation` field in request header is for JWT String with `/connect` endpoint or a test username (as a String) with `/deployusercontainers` endpoint.
      

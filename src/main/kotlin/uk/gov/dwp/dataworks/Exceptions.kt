@@ -10,3 +10,9 @@ class FailedToExecuteRunTaskRequestException(message: String, throwable: Throwab
 class SystemArgumentException(message: String) : Exception(message)
 
 class UpperRuleLimitReachedException(message: String) : Exception(message)
+
+/** Used when multiple Load Balancers are unexpectedly matched in the AWS environment */
+class MultipleLoadBalancersMatchedException(message: String): Exception(message)
+
+/** Used when multiple Listeners are unexpectedly matched in the AWS environment */
+class MultipleListenersMatchedException(message: String): Exception(message)

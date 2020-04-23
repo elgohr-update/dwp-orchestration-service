@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.ecs.model.DescribeServicesResponse
 @Service
 class ExistingUserServiceCheck{
     @Autowired
-    private lateinit var configService : ConfigurationService
+    private lateinit var configurationResolver : ConfigurationResolver
 
     fun check(userName: String, ecsClusterName: String):Boolean{
         val listOfService = servicesResponse(ecsClusterName, userName).services()
@@ -17,7 +17,7 @@ class ExistingUserServiceCheck{
     }
 
     fun servicesResponse(ecsClusterName: String, userName: String): DescribeServicesResponse {
-        val ecsClient = EcsClient.builder().region(configService.awsRegion).build()
+        val ecsClient = EcsClient.builder().region(configurationResolver.awsRegion).build()
         return ecsClient.describeServices(DescribeServicesRequest.builder().cluster(ecsClusterName).services("${userName}-analytical-workspace").build())
     }
 }
