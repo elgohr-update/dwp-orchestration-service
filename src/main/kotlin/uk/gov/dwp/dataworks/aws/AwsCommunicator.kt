@@ -145,7 +145,7 @@ class AwsCommunicator {
      */
     fun calculateVacantPriorityValue(rules: Iterable<Rule>): Int {
         val rulePriorities = rules.map { it.priority() }.filter { it != "default" }.map { Integer.parseInt(it) }.toSet()
-        for (priority in 0..999) {
+        for (priority in 1..999) {
             if (!rulePriorities.contains(priority)) return priority
         }
         throw UpperRuleLimitReachedException("The upper limit of 1000 rules has been reached on this listener.")

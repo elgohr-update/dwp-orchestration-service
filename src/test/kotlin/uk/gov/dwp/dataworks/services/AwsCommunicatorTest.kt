@@ -94,26 +94,26 @@ class AwsCommunicatorTest {
     }
 
     @Test
-    fun `Empty load balancer priorities returns 0`() {
-        assertThat(awsCommunicator.calculateVacantPriorityValue(emptyList())).isEqualTo(0)
+    fun `Empty load balancer priorities returns 1`() {
+        assertThat(awsCommunicator.calculateVacantPriorityValue(emptyList())).isEqualTo(1)
     }
 
     @Test
     fun `Non-consecutive load balancer priorities sets lowest available value`() {
-        val actual = awsCommunicator.calculateVacantPriorityValue(listOf(rule("0"), rule("2")))
-        assertThat(actual).isEqualTo(1)
+        val actual = awsCommunicator.calculateVacantPriorityValue(listOf(rule("1"), rule("3")))
+        assertThat(actual).isEqualTo(2)
     }
 
     @Test
     fun `Priority calculation does not take default into account`() {
         val actual = awsCommunicator.calculateVacantPriorityValue(listOf(rule("default")))
-        assertThat(actual).isEqualTo(0)
+        assertThat(actual).isEqualTo(1)
     }
 
     @Test
     fun `Throws Exception when no priorities remain`() {
         val oneThousandRules = mutableListOf<Rule>()
-        for (i in 0..999) oneThousandRules.add(rule(i.toString()))
+        for (i in 1..999) oneThousandRules.add(rule(i.toString()))
 
         assertThatCode { awsCommunicator.calculateVacantPriorityValue(oneThousandRules) }
                 .isInstanceOf(UpperRuleLimitReachedException::class.java)
