@@ -17,7 +17,7 @@ module "ecs-fargate-task-definition" {
     secretOptions = []
     logDriver     = "awslogs"
     options = {
-      "awslogs-group"         = "/ecs/${data.aws_ecs_cluster.ecs_main_cluster.cluster_name}/${var.name_prefix}"
+      "awslogs-group"         = "/aws/ecs/${data.aws_ecs_cluster.ecs_main_cluster.cluster_name}/${var.name_prefix}"
       "awslogs-region"        = var.region
       "awslogs-stream-prefix" = "ecs"
     }

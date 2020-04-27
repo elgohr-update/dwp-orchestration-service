@@ -41,7 +41,7 @@ dependencies {
 	implementation ("com.auth0:java-jwt:3.10.0")
 	implementation ("com.auth0:jwks-rsa:0.11.0")
 	// Logging things
-	implementation("com.github.dwp:dataworks-common-logging:0.0.4")
+	implementation("com.github.dwp:dataworks-common-logging:0.0.5")
 	runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
 	runtimeOnly("ch.qos.logback:logback-core:1.2.3")
 
