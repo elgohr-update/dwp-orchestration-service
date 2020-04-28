@@ -61,7 +61,7 @@ class AuthenticationService {
      */
     fun cognitoUsernameFromJwt(jwt: DecodedJWT): String {
         return jwt.getClaim("cognito:username").asString()
-        ?: jwt.getClaim("userName").asString()
+        ?: jwt.getClaim("username").asString()
         ?: throw IllegalArgumentException("No username found in JWT token")
     }
 }
