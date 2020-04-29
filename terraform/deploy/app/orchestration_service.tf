@@ -50,6 +50,10 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.user_container_port"
       value = 8443
+    },
+    {
+      name  = "orchestrationService.jupyterhub_bucket"
+      value = module.jupyter_s3_storage.jupyterhub_bucket.id
     }
   ]
 }
@@ -126,4 +130,17 @@ module "ec2_task_definition" {
   guacamole_client_image = "${local.ecr_endpoint}/aws-analytical-env/guacamole"
 
   cognito_user_pool_id = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito.user_pool_id
+}
+
+#
+## ---------------------------------------------------------------------------------------------------------------------
+## JupyterHub S3 Storage
+## ---------------------------------------------------------------------------------------------------------------------
+module "jupyter_s3_storage" {
+  source      = "../../modules/jupyter-s3-storage"
+  name_prefix = "${var.name_prefix}-jupyter-s3-storage"
+
+  common_tags    = local.common_tags
+  logging_bucket = data.terraform_remote_state.security-tools.outputs.logstore_bucket.id
+  vpc_id         = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
 }
