@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "jupyter-s3-access-document",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:PutObjectAcl",
+        "s3:GetObjectVersion",
+        "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:DescribeKey",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*"
+      ],
+      "Resource": []
+    },
+    {
+      "Sid": "jupyter-s3-list",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": []
+    },
+    {
+    "Sid": "jupyter_assume_role_policy_document",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}

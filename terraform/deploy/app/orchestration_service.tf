@@ -54,6 +54,14 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.jupyterhub_bucket"
       value = module.jupyter_s3_storage.jupyterhub_bucket.id
+    },
+    {
+      name  = "orchestrationService.jupyterhub_kms_arn"
+      value = module.jupyter_s3_storage.jupyterhub_kms.arn
+    },
+    {
+      name  = "orchestrationService.jupyterhub_bucket_arn"
+      value = module.jupyter_s3_storage.jupyterhub_bucket.arn
     }
   ]
 }
