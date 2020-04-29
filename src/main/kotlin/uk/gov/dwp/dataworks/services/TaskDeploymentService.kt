@@ -7,8 +7,10 @@ import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.ContainerOverride
 import software.amazon.awssdk.services.ecs.model.LoadBalancer
+import uk.gov.dwp.dataworks.UserTask
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.logging.DataworksLogger
+import java.util.UUID
 
 @Service
 class TaskDeploymentService {
@@ -30,7 +32,8 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(userName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun runContainers(userName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>): UserTask {
+        val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
         val emrClusterHostName = configurationResolver.getStringConfig(ConfigKey.EMR_CLUSTER_HOST_NAME)
@@ -40,7 +43,7 @@ class TaskDeploymentService {
         // Load balancer & Routing
         val loadBalancer = awsCommunicator.getLoadBalancerByName(albName)
         val listener = awsCommunicator.getAlbListenerByPort(loadBalancer.loadBalancerArn(), containerPort)
-        val targetGroup = awsCommunicator.createTargetGroup(loadBalancer.vpcId(), "$userName-target-group", containerPort)
+        val targetGroup = awsCommunicator.createTargetGroup(correlationId, loadBalancer.vpcId(), "$userName-target-group", containerPort)
         // There are 2 distinct LoadBalancer classes in the AWS SDK - ELBV2 and ECS. They represent the same LB but in different ways.
         // The following is the load balancer needed to create an ECS service.
         val ecsLoadBalancer = LoadBalancer.builder()
@@ -49,23 +52,26 @@ class TaskDeploymentService {
                 .containerName("guacamole")
                 .containerPort(containerPort)
                 .build()
-        awsCommunicator.createAlbRoutingRule(listener.listenerArn(),targetGroup.targetGroupArn(),"/$userName/*")
+        val albRoutingRule = awsCommunicator.createAlbRoutingRule(correlationId, listener.listenerArn(),targetGroup.targetGroupArn(),"/$userName/*")
 
         // IAM permissions
         parsePolicyDocuments(additionalPermissions)
-        val iamPolicy = awsCommunicator.createIamPolicy("$userName-task-role-document", taskRolePolicyString)
-        val iamRole = awsCommunicator.createIamRole("$userName-iam-role", taskAssumeRoleString)
-        awsCommunicator.attachIamPolicyToRole(iamPolicy, iamRole)
+        val iamPolicy = awsCommunicator.createIamPolicy(correlationId, "$userName-task-role-document", taskRolePolicyString)
+        val iamRole = awsCommunicator.createIamRole(correlationId, "$userName-iam-role", taskAssumeRoleString)
+        awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
 
         // ECS
-        awsCommunicator.createEcsService(ecsClusterName, "${userName}-analytical-workspace", ecsLoadBalancer)
-        val containerOverrides = buildContainerOverrides(userName, emrClusterHostName, jupyterMemory, jupyterCpu)
+        val ecsServiceName = "${userName}-analytical-workspace"
+        awsCommunicator.createEcsService(correlationId, ecsClusterName, ecsServiceName, ecsLoadBalancer)
+        val containerOverrides = buildContainerOverrides(correlationId, userName, emrClusterHostName, jupyterMemory, jupyterCpu)
         val ecsTaskRequest = awsCommunicator.buildEcsTask(ecsClusterName, "orchestration-service-analytical-workspace", iamRole.arn(), containerOverrides)
 
-        awsCommunicator.runEcsTask(ecsTaskRequest)
+        awsCommunicator.runEcsTask(correlationId, ecsTaskRequest)
+
+        return UserTask(correlationId, userName, targetGroup.targetGroupArn(), albRoutingRule.ruleArn(), ecsClusterName, ecsServiceName, iamRole.arn(), iamPolicy.arn())
     }
 
-    private fun buildContainerOverrides(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int): List<ContainerOverride> {
+    private fun buildContainerOverrides(correlationId: String, userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int): List<ContainerOverride> {
         val usernamePair = "USER" to userName
         val hostnamePair = "EMR_HOST_NAME" to emrHostname
 
@@ -89,11 +95,11 @@ class TaskDeploymentService {
         ).joinToString(" ")
         val vncScreenSizePair = "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")
 
-        val chrome = awsCommunicator.buildContainerOverride("headless_chrome", chromeOptsPair, vncScreenSizePair).build()
-        val guacd = awsCommunicator.buildContainerOverride("guacd", usernamePair).build()
-        val guacamole = awsCommunicator.buildContainerOverride("guacamole", "CLIENT_USERNAME" to userName).build()
+        val chrome = awsCommunicator.buildContainerOverride(correlationId, "headless_chrome", chromeOptsPair, vncScreenSizePair).build()
+        val guacd = awsCommunicator.buildContainerOverride(correlationId, "guacd", usernamePair).build()
+        val guacamole = awsCommunicator.buildContainerOverride(correlationId, "guacamole", "CLIENT_USERNAME" to userName).build()
         // Jupyter also has configurable resources
-        val jupyter = awsCommunicator.buildContainerOverride("jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
+        val jupyter = awsCommunicator.buildContainerOverride(correlationId, "jupyterHub", usernamePair, hostnamePair).cpu(jupyterCpu).memory(jupyterMemory).build()
 
         return listOf(chrome, guacd, guacamole, jupyter)
     }

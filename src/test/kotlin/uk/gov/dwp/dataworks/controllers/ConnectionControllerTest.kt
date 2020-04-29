@@ -2,11 +2,12 @@ package uk.gov.dwp.dataworks.controllers
 
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
-import com.nhaarman.mockitokotlin2.*
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers.anyString
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -17,11 +18,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import uk.gov.dwp.dataworks.JWTObject
-import uk.gov.dwp.dataworks.services.ConfigurationResolver
-import uk.gov.dwp.dataworks.services.ConfigKey
+import uk.gov.dwp.dataworks.services.ActiveUserTasks
 import uk.gov.dwp.dataworks.services.AuthenticationService
-import uk.gov.dwp.dataworks.services.ExistingUserServiceCheck
+import uk.gov.dwp.dataworks.services.ConfigKey
+import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import uk.gov.dwp.dataworks.services.TaskDeploymentService
+import uk.gov.dwp.dataworks.services.TaskDestroyService
 
 @RunWith(SpringRunner::class)
 @WebMvcTest(ConnectionController::class, ConfigurationResolver::class)
@@ -32,9 +34,11 @@ class ConnectionControllerTest {
     @MockBean
     private lateinit var authService: AuthenticationService
     @MockBean
-    private lateinit var existingUserServiceCheck: ExistingUserServiceCheck
-    @MockBean
     private lateinit var taskDeploymentService: TaskDeploymentService
+    @MockBean
+    private lateinit var taskDestroyService: TaskDestroyService
+    @MockBean
+    private lateinit var activeUserTasks: ActiveUserTasks
 
     @Before
     fun setup() {
@@ -43,7 +47,6 @@ class ConnectionControllerTest {
         System.setProperty(ConfigKey.USER_CONTAINER_URL.key, "test_url")
         val jwtObject = JWTObject(mock<DecodedJWT>(), "test_user")
         whenever(authService.validate(any())).thenReturn(jwtObject)
-        whenever(existingUserServiceCheck.check(any(), anyString())).thenReturn(false)
     }
 
     @Test

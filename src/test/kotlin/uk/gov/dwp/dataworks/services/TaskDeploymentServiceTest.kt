@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit4.SpringRunner
 import software.amazon.awssdk.regions.Region
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRule
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Rule
 import uk.gov.dwp.dataworks.Application
 import uk.gov.dwp.dataworks.JWTObject
+import uk.gov.dwp.dataworks.aws.AwsCommunicator
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class])
@@ -31,6 +33,9 @@ class TaskDeploymentServiceTest {
 
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
+
+    @MockBean
+    private lateinit var awsCommunicator: AwsCommunicator
 
     private val decodedJWT = mock<DecodedJWT>()
 

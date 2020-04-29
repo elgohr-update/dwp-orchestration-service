@@ -8,14 +8,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 import uk.gov.dwp.dataworks.DeployRequest
 import uk.gov.dwp.dataworks.logging.DataworksLogger
+import uk.gov.dwp.dataworks.services.ActiveUserTasks
 import uk.gov.dwp.dataworks.services.AuthenticationService
 import uk.gov.dwp.dataworks.services.ConfigKey
 import uk.gov.dwp.dataworks.services.ConfigurationResolver
-import uk.gov.dwp.dataworks.services.ExistingUserServiceCheck
 import uk.gov.dwp.dataworks.services.TaskDeploymentService
+import uk.gov.dwp.dataworks.services.TaskDestroyService
 
 @RestController
 @CrossOrigin
@@ -27,11 +34,13 @@ class ConnectionController {
     @Autowired
     private lateinit var authService: AuthenticationService
     @Autowired
-    private lateinit var existingUserServiceCheck: ExistingUserServiceCheck
-    @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
     @Autowired
+    private lateinit var taskDestroyService: TaskDestroyService
+    @Autowired
     private lateinit var configurationResolver: ConfigurationResolver
+    @Autowired
+    private lateinit var activeUserTasks: ActiveUserTasks
 
     @Operation(summary = "Connect to Analytical Environment",
             description = "Provisions the Analytical Environment for a user and returns the required information to connect")
@@ -67,7 +76,8 @@ class ConnectionController {
     @PostMapping("/disconnect")
     @ResponseStatus(HttpStatus.OK)
     fun disconnect(@RequestHeader("Authorisation") token: String) {
-        authService.validate(token)
+        val jwtObject = authService.validate(token)
+        taskDestroyService.destroyServices(jwtObject.userName)
     }
 
     @ExceptionHandler(JWTVerificationException::class, SigningKeyNotFoundException::class)
@@ -77,16 +87,16 @@ class ConnectionController {
     }
 
     fun handleRequest(userName: String, requestBody: DeployRequest):String {
-        if (existingUserServiceCheck.check(userName, configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME))){
+        if (activeUserTasks.contains(userName)) {
             logger.info("Redirecting user to running containers, as they exist")
         } else {
-            taskDeploymentService.runContainers(
+            val userTask = taskDeploymentService.runContainers(
                     userName,
                     requestBody.jupyterCpu,
                     requestBody.jupyterMemory,
-                    requestBody.additionalPermissions
-            )
-            logger.info("Submitted request", "cluster_name" to configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME), "user_name" to userName)
+                    requestBody.additionalPermissions)
+            activeUserTasks.put(userTask)
+            logger.info("Completed request", "cluster_name" to configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME), "user_name" to userName)
         }
         return "${configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}"
     }

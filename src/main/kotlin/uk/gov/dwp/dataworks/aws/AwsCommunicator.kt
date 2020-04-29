@@ -3,8 +3,20 @@ package uk.gov.dwp.dataworks.aws
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
+import software.amazon.awssdk.services.dynamodb.model.KeyType
+import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
 import software.amazon.awssdk.services.ecs.model.ContainerOverride
 import software.amazon.awssdk.services.ecs.model.CreateServiceRequest
+import software.amazon.awssdk.services.ecs.model.DeleteServiceRequest
 import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.RunTaskRequest
 import software.amazon.awssdk.services.ecs.model.Service
@@ -13,6 +25,8 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalanci
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Action
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateRuleRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateTargetGroupRequest
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DeleteRuleRequest
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DeleteTargetGroupRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesRequest
@@ -25,6 +39,8 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroup
 import software.amazon.awssdk.services.iam.model.AttachRolePolicyRequest
 import software.amazon.awssdk.services.iam.model.CreatePolicyRequest
 import software.amazon.awssdk.services.iam.model.CreateRoleRequest
+import software.amazon.awssdk.services.iam.model.DeletePolicyRequest
+import software.amazon.awssdk.services.iam.model.DeleteRoleRequest
 import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
@@ -84,7 +100,7 @@ class AwsCommunicator {
      * Creates and returns a [TargetGroup] in the given VPC. This target group can later be assigned to
      * a [LoadBalancer] using it's ARN or [ElasticLoadBalancingV2Client.registerTargets].
      */
-    fun createTargetGroup(vpcId: String, targetGroupName: String, targetPort: Int): TargetGroup {
+    fun createTargetGroup(correlationId: String, vpcId: String, targetGroupName: String, targetPort: Int): TargetGroup {
         // Create HTTPS target group in VPC to port containerPort
         val targetGroupResponse = awsClients.albClient.createTargetGroup(
                 CreateTargetGroupRequest.builder()
@@ -95,6 +111,7 @@ class AwsCommunicator {
                         .build())
         val targetGroup = targetGroupResponse.targetGroups().first { it.port() == targetPort }
         logger.info("Created target group",
+                "correlation_id" to correlationId,
                 "vpc_id" to vpcId,
                 "target_group_arn" to targetGroup.targetGroupArn(),
                 "protocol" to targetGroup.protocolAsString(),
@@ -105,13 +122,22 @@ class AwsCommunicator {
     }
 
     /**
+     * Deletes the [TargetGroup] with the specified [targetGroupArn]
+     */
+    fun deleteTargetGroup(correlationId: String, targetGroupArn: String) {
+        val deleteRequest = DeleteTargetGroupRequest.builder().targetGroupArn(targetGroupArn).build()
+        awsClients.albClient.deleteTargetGroup(deleteRequest)
+        logger.info("Deleted target group","correlation_id" to correlationId, "target_group_arn" to targetGroupArn)
+    }
+
+    /**
      * Creates a [LoadBalancer] routing rule for the [Listener] with given [listenerArn] and [TargetGroup]
      * of given [targetGroupArn].
      * The rule created will be a path-pattern forwarder based on [pathPattern].
      *
      * **See Also:** [AWS docs](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html)
      */
-    fun createAlbRoutingRule(listenerArn: String, targetGroupArn: String, pathPattern: String) {
+    fun createAlbRoutingRule(correlationId: String, listenerArn: String, targetGroupArn: String, pathPattern: String): Rule {
         // Build path pattern condition
         val albRuleCondition = RuleCondition.builder()
                 .field("path-pattern")
@@ -133,10 +159,20 @@ class AwsCommunicator {
                 .actions(albRuleAction)
                 .build()).rules()[0]
         logger.info("Created alb routing rule",
+                "correlation_id" to correlationId,
                 "actions" to rule.actions().joinToString(),
                 "priority" to rule.priority(),
-                "arn" to rule.ruleArn(),
+                "rule_arn" to rule.ruleArn(),
                 "conditions" to rule.conditions().joinToString())
+        return rule
+    }
+
+    /**
+     * Deleted the [Rule] with the specified [ruleArn]
+     */
+    fun deleteAlbRoutingRule(correlationId: String, ruleArn: String) {
+        awsClients.albClient.deleteRule(DeleteRuleRequest.builder().ruleArn(ruleArn).build())
+        logger.info("Deleted alb routing rule", "correlation_id" to correlationId, "rule_arn" to ruleArn )
     }
 
     /**
@@ -155,9 +191,10 @@ class AwsCommunicator {
      * Helper method to wrap a container name and set of overrides into an incomplete [ContainerOverride.Builder] for
      * later consumption.
      */
-    fun buildContainerOverride(containerName: String, vararg overrides: Pair<String, String>): ContainerOverride.Builder {
+    fun buildContainerOverride(correlationId: String, containerName: String, vararg overrides: Pair<String, String>): ContainerOverride.Builder {
         val overrideKeyPairs = overrides.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
         logger.info("Overriding container args",
+                "correlation_id" to correlationId,
                 "container_name" to containerName,
                 "overrides" to overrideKeyPairs.joinToString { "${it.name()}:${it.value()}" })
         return ContainerOverride.builder()
@@ -171,7 +208,7 @@ class AwsCommunicator {
      *
      * For ease of use, the task definition is retrieved from the [task definition env var][ConfigKey.USER_CONTAINER_TASK_DEFINITION]
      */
-    fun createEcsService(clusterName: String, serviceName: String, loadBalancer: EcsLoadBalancer): Service {
+    fun createEcsService(correlationId: String, clusterName: String, serviceName: String, loadBalancer: EcsLoadBalancer): Service {
         // Create ECS service request
         val serviceBuilder = CreateServiceRequest.builder()
                 .cluster(clusterName)
@@ -184,11 +221,26 @@ class AwsCommunicator {
         //Create the service
         val ecsService = awsClients.ecsClient.createService(serviceBuilder).service()
         logger.info("Created ECS Service",
+                "correlation_id" to correlationId,
                 "cluster_name" to clusterName,
                 "service_name" to serviceName,
                 "cluster_arn" to ecsService.clusterArn(),
                 "task_definition" to ecsService.taskDefinition())
         return ecsService
+    }
+
+    /**
+     * Deletes the [Service] from the cluster [clusterName] with the name [serviceName]
+     */
+    fun deleteEcsService(correlationId: String, clusterName: String, serviceName: String) {
+        awsClients.ecsClient.deleteService(
+                DeleteServiceRequest.builder()
+                        .cluster(clusterName)
+                        .service(serviceName).build())
+        logger.info("Deleted ECS Service",
+                "correlation_id" to correlationId,
+                "cluster_name" to clusterName,
+                "service_name" to serviceName)
     }
 
     /**
@@ -216,9 +268,10 @@ class AwsCommunicator {
     /**
      * Runs the specified [RunTaskRequest]
      */
-    fun runEcsTask(taskRequest: RunTaskRequest) {
+    fun runEcsTask(correlationId: String, taskRequest: RunTaskRequest) {
         val task = awsClients.ecsClient.runTask(taskRequest).tasks()[0]
         logger.info("ECS tasks run",
+                "correlation_id" to correlationId,
                 "instance_arns" to task.containerInstanceArn(),
                 "task_groups" to task.group(),
                 "cluster_arn" to task.clusterArn(),
@@ -232,13 +285,14 @@ class AwsCommunicator {
      * Creates an IAM [Policy] from the name and document provided. [policyDocument] should be in JSON format
      * as per the AWS standards for documents.
      */
-    fun createIamPolicy(policyName: String, policyDocument: String): Policy {
+    fun createIamPolicy(correlationId: String, policyName: String, policyDocument: String): Policy {
         val policy = awsClients.iamClient.createPolicy(
                 CreatePolicyRequest.builder()
                         .policyDocument(policyDocument)
                         .policyName(policyName).build())
                 .policy()
         logger.info("Created iam policy",
+                "correlation_id" to correlationId,
                 "policy_arn" to policy.arn(),
                 "policy_path" to policy.path(),
                 "policy_name" to policy.policyName(),
@@ -248,16 +302,25 @@ class AwsCommunicator {
     }
 
     /**
+     * Deletes the [Policy] with the specified [policyArn]
+     */
+    fun deleteIamPolicy(correlationId: String, policyArn: String) {
+        awsClients.iamClient.deletePolicy(DeletePolicyRequest.builder().policyArn(policyArn).build())
+        logger.info("Deleted iam policy", "correlation_id" to correlationId, "policy_arn" to policyArn)
+    }
+
+    /**
      * Creates an IAM [Role] from the name and role assumption document provided. [assumeRolePolicy] should be
      * in JSON format as per the AWS standards for documents.
      */
-    fun createIamRole(roleName: String, assumeRolePolicy: String): Role {
+    fun createIamRole(correlationId: String, roleName: String, assumeRolePolicy: String): Role {
         val role = awsClients.iamClient.createRole(
                 CreateRoleRequest.builder()
                         .assumeRolePolicyDocument(assumeRolePolicy)
                         .roleName(roleName).build())
                 .role()
         logger.info("Created iam role",
+                "correlation_id" to correlationId,
                 "role_arn" to role.arn(),
                 "role_path" to role.path(),
                 "role_name" to role.roleName(),
@@ -267,12 +330,58 @@ class AwsCommunicator {
     }
 
     /**
+     * Deletes the [Role] with the specified [roleName]
+     */
+    fun deleteIamRole(correlationId: String, roleName: String) {
+        awsClients.iamClient.deleteRole(DeleteRoleRequest.builder().roleName(roleName).build())
+        logger.info("Deleted iam role", "correlation_id" to correlationId, "role_name" to roleName)
+    }
+
+    /**
      * Attaches [policy] to [role] using the [Policy] ARN and [Role] name.
      */
-    fun attachIamPolicyToRole(policy: Policy, role: Role) {
+    fun attachIamPolicyToRole(correlationId: String, policy: Policy, role: Role) {
         awsClients.iamClient.attachRolePolicy(AttachRolePolicyRequest.builder()
                 .policyArn(policy.arn())
                 .roleName(role.roleName()).build())
-        logger.info("Attched policy to role", "policy_arn" to policy.arn(), "role_name" to role.roleName())
+        logger.info("Attched policy to role", "correlation_id" to correlationId, "policy_arn" to policy.arn(), "role_name" to role.roleName())
+    }
+
+    fun createDynamoDbTable(tableName: String, attributes: List<AttributeDefinition>, keyName: String) {
+        val tables = awsClients.dynamoDbClient.listTables(ListTablesRequest.builder().build())
+        if(!tables.tableNames().contains(tableName)) {
+            awsClients.dynamoDbClient.createTable(CreateTableRequest.builder()
+                    .tableName(tableName)
+                    .attributeDefinitions(attributes)
+                    .keySchema(KeySchemaElement.builder().attributeName(keyName).keyType(KeyType.HASH).build())
+                    .build())
+            logger.info("Created dynamodb table", "table_name" to tableName)
+        }
+    }
+
+    fun putDynamoDbItem(correlationId: String, dynamoTableName: String, attributes: Map<String, AttributeValue>) {
+        awsClients.dynamoDbClient.putItem(PutItemRequest.builder()
+                .tableName(dynamoTableName)
+                .item(attributes).build())
+        logger.info("User tasks registered in dynamodb", "correlation_id" to correlationId)
+    }
+
+    fun getDynamoDbItem(dynamoTableName: String, dynamoPrimaryKey: String, value: String): GetItemResponse {
+        val retrievalKey = mapOf(dynamoPrimaryKey to AttributeValue.builder().s(value).build())
+        return awsClients.dynamoDbClient.getItem(
+                GetItemRequest.builder()
+                        .tableName(dynamoTableName)
+                        .key(retrievalKey)
+                        .build())
+    }
+
+    fun removeDynamoDbItem(correlationId: String, dynamoTableName: String, dynamoPrimaryKey: String, userName: String) {
+        awsClients.dynamoDbClient.deleteItem(DeleteItemRequest.builder()
+                .tableName(dynamoTableName)
+                .key(mapOf(dynamoPrimaryKey to AttributeValue.builder().s(userName).build()))
+                .build())
+        logger.info("User tasks deregistered in dynamodb",
+                "correlation_id" to correlationId,
+                "user_name" to userName)
     }
 }

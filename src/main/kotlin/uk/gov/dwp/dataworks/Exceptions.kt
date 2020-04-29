@@ -16,3 +16,12 @@ class MultipleLoadBalancersMatchedException(message: String): Exception(message)
 
 /** Used when multiple Listeners are unexpectedly matched in the AWS environment */
 class MultipleListenersMatchedException(message: String): Exception(message)
+
+/** Used when multiple Target Groups are unexpectedly matched in the AWS environment */
+class MultipleTargetGroupsMatchedException(message: String): Exception(message)
+
+/** Used when Tasks for a given user cannot be found in [ActiveUserTasks] */
+class UserHasNoTasksException(message: String): Exception(message)
+
+/** Used when Tasks failed to be destroyed */
+class TaskDestroyException(message: String, throwable: Throwable) : Exception(message, throwable)
