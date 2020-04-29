@@ -139,6 +139,11 @@ variable "interface_vpce_sg_id" {
   description = "(Required) The VPCe Security group ID"
 }
 
+variable "internet_proxy_vpce_sg_id" {
+  type        = string
+  description = "(Required) Internet Proxy VPCe Security group ID "
+}
+
 variable "s3_prefixlist_id" {
   type        = string
   description = "(Required) The PrefixList ID for s3, required for docker pull"

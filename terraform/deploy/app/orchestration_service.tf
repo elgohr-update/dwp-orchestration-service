@@ -80,12 +80,13 @@ module "ecs-fargate-service" {
   role_arn = {
     management-dns = "arn:aws:iam::${local.account[local.management_account[local.environment]]}:role/${var.assume_role}"
   }
-  interface_vpce_sg_id = data.terraform_remote_state.emr_cluster_broker_infra.outputs.interface_vpce_sg_id
-  s3_prefixlist_id     = data.terraform_remote_state.emr_cluster_broker_infra.outputs.s3_prefix_list_id
-  common_tags          = local.common_tags
-  parent_domain_name   = local.parent_domain_name[local.environment]
-  root_dns_prefix      = local.root_dns_prefix[local.environment]
-  cert_authority_arn   = data.terraform_remote_state.aws_certificate_authority.outputs.root_ca.arn
+  interface_vpce_sg_id      = data.terraform_remote_state.emr_cluster_broker_infra.outputs.interface_vpce_sg_id
+  s3_prefixlist_id          = data.terraform_remote_state.emr_cluster_broker_infra.outputs.s3_prefix_list_id
+  common_tags               = local.common_tags
+  parent_domain_name        = local.parent_domain_name[local.environment]
+  root_dns_prefix           = local.root_dns_prefix[local.environment]
+  cert_authority_arn        = data.terraform_remote_state.aws_certificate_authority.outputs.root_ca.arn
+  internet_proxy_vpce_sg_id = data.terraform_remote_state.emr_cluster_broker_infra.outputs.vpc.internet_proxy_vpce_sg_id
 }
 
 data "aws_ami" "hardened" {
