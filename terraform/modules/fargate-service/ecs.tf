@@ -4,7 +4,6 @@ resource "aws_ecs_service" "service" {
   cluster                            = var.ecs_cluster_arn
   task_definition                    = var.task_definition_arn
   launch_type                        = "FARGATE"
-  desired_count                      = var.desired_count
   platform_version                   = var.platform_version
   deployment_maximum_percent         = var.deployment_maximum_percent
   deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
