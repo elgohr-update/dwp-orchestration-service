@@ -12,11 +12,6 @@ resource "aws_s3_bucket" "jupyter_storage" {
     enabled = true
   }
 
-  logging {
-    target_bucket = var.logging_bucket
-    target_prefix = "S3Logs/${random_id.jupyter_bucket.hex}-ci/ServerLogs"
-  }
-
   lifecycle_rule {
     id      = "${var.name_prefix}-lifecycle"
     enabled = true
