@@ -149,6 +149,11 @@ variable "s3_prefixlist_id" {
   description = "(Required) The PrefixList ID for s3, required for docker pull"
 }
 
+variable "dynamodb_prefixlist_id" {
+  type        = string
+  description = "(Required) The PrefixList ID for dynamodb"
+}
+
 variable "instance_max_count" {
   type        = number
   description = "(Optional) The maximum number of instances you would like running"

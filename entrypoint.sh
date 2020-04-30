@@ -14,4 +14,4 @@ keytool -genkey \
 
 chown -R ${USER}.${USER} ${APP_HOME}/orchestration-service.keystore
 
-sh -c "java -jar ./${APP_NAME}.jar \"$@\"" --
+sh -c "java -Dhttp.proxyHost='${PROXY_HOST}' -Dhttp.proxyPort='3128' -Dhttp.nonProxyHosts='${NON_PROXY_HOSTS}' -Dhttps.proxyHost='${PROXY_HOST}' -Dhttps.proxyPort='3128' -jar ./${APP_NAME}.jar \"$@\"" --

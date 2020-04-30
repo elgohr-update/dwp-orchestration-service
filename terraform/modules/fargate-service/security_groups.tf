@@ -73,6 +73,16 @@ resource aws_security_group_rule egress_to_s3_pl {
   prefix_list_ids   = [var.s3_prefixlist_id]
 }
 
+resource aws_security_group_rule egress_to_dynamodb_pl {
+  description       = "egress_to_dynamodb_pl"
+  from_port         = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.ecs_tasks_sg.id
+  to_port           = 443
+  type              = "egress"
+  prefix_list_ids   = [var.dynamodb_prefixlist_id]
+}
+
 resource "aws_security_group_rule" "internet_proxy_endpoint_from_ecs_task" {
   description              = "Accept requests to Internet Proxy endpoint from Concourse Web nodes"
   type                     = "ingress"
