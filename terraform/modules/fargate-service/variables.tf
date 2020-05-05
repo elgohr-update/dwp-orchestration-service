@@ -157,7 +157,7 @@ variable "dynamodb_prefixlist_id" {
 variable "instance_max_count" {
   type        = number
   description = "(Optional) The maximum number of instances you would like running"
-  default     = 4
+  default     = 2
 }
 
 variable "root_dns_prefix" {

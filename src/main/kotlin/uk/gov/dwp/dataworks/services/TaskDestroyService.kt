@@ -26,8 +26,9 @@ class TaskDestroyService {
             awsCommunicator.deleteTargetGroup(userTasks.correlationId, userTasks.targetGroupArn)
             awsCommunicator.deleteAlbRoutingRule(userTasks.correlationId, userTasks.albRoutingRuleArn)
             awsCommunicator.deleteEcsService(userTasks.correlationId, userTasks.ecsClusterName, userTasks.ecsServiceName)
-            awsCommunicator.deleteIamRole(userTasks.correlationId, userTasks.iamRoleArn)
+            awsCommunicator.detachIamPolicyFromRole(userTasks.correlationId, userTasks.iamRoleName, userTasks.iamPolicyArn)
             awsCommunicator.deleteIamPolicy(userTasks.correlationId, userTasks.iamPolicyArn)
+            awsCommunicator.deleteIamRole(userTasks.correlationId, userTasks.iamRoleName)
         } catch (e: Exception) {
             logger.error("One or more resources failed to be removed", e, "correlation_id" to userTasks.correlationId)
             throw TaskDestroyException("One or more resources failed to be removed", e)

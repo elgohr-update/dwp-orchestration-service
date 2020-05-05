@@ -72,7 +72,7 @@ class ConnectionControllerTest {
     fun `401 returned when bad token connect and disconnect`() {
         whenever(authService.validate(any())).thenThrow(JWTVerificationException(""))
         mvc.perform(post("/connect")
-                .content("{}")
+                .content("{\"emrClusterHostName\":\"\"}")
                 .header("content-type", "application/json")
                 .header("Authorisation", "testBadToken"))
                 .andExpect(status().isUnauthorized)
@@ -84,7 +84,7 @@ class ConnectionControllerTest {
     @Test
     fun `200 returned with well formed request connect and disconnect`() {
         mvc.perform(post("/connect")
-                .content("{}")
+                .content("{\"emrClusterHostName\":\"\"}")
                 .header("content-type", "application/json")
                 .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)
@@ -103,7 +103,7 @@ class ConnectionControllerTest {
         mvc.perform(post("/deployusercontainers")
                 .header("Authorisation", "test_user")
                 .header("content-type", "application/json")
-                .content("{}"))
+                .content("{\"emrClusterHostName\":\"\"}"))
                 .andExpect(status().isOk)
     }
 

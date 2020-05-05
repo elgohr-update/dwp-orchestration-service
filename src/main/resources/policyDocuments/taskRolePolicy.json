@@ -4,7 +4,7 @@
     {
       "Effect": "Allow",
       "Action": [
-        ADDITIONAL_PERMISSIONS,
+        ADDITIONAL_PERMISSIONS
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:BatchGetImage",

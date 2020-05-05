@@ -12,13 +12,7 @@ resource "aws_ecs_task_definition" "service" {
           "image": "${var.jupyterhub_image}",
           "cpu": 512,
           "memory": 512,
-          "essential": true,
-          "portMappings": [
-            {
-              "containerPort": 8000,
-              "hostPort": 8443
-            }
-          ]
+          "essential": true
        },
       {
           "name": "headless_chrome",
@@ -27,12 +21,6 @@ resource "aws_ecs_task_definition" "service" {
           "memory": 256,
           "essential": true,
           "links":["jupyterHub"],
-          "portMappings": [
-            {
-              "containerPort": 5900,
-              "hostPort": 5900
-            }
-          ],
           "environment": [
             {
               "name": "VNC_OPTS",
@@ -46,13 +34,7 @@ resource "aws_ecs_task_definition" "service" {
           "cpu": 128,
           "memory": 128,
           "essential": true,
-          "links":["headless_chrome"],
-          "portMappings": [
-            {
-              "containerPort": 4822,
-              "hostPort": 4822
-            }
-          ]
+          "links":["headless_chrome"]
       },
       {
           "name": "guacamole",

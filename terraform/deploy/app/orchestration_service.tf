@@ -25,11 +25,15 @@ module "ecs-fargate-task-definition" {
   environment = [
     {
       name  = "orchestrationService.user_container_task_definition"
-      value = "${var.name_prefix}-analytical-workspace"
+      value = module.ec2_task_definition.aws_ecs_task_definition.arn
     },
     {
       name  = "orchestrationService.load_balancer_name"
       value = "aws-analytical-env-lb"
+    },
+    {
+      name  = "orchestrationService.load_balancer_port"
+      value = "443"
     },
     {
       name  = "orchestrationService.aws_region"
@@ -84,7 +88,9 @@ module "ecs-fargate-task-definition" {
         "glue.${var.region}.amazonaws.com",
         "sts.${var.region}.amazonaws.com",
         "*.${var.region}.compute.internal",
-        "dynamodb.${var.region}.amazonaws.com"
+        "dynamodb.${var.region}.amazonaws.com",
+        "elasticloadbalancing.${var.region}.amazonaws.com",
+        "ecs.${var.region}.amazonaws.com"
       ])
     }
   ]

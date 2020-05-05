@@ -7,7 +7,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
@@ -41,6 +40,7 @@ import software.amazon.awssdk.services.iam.model.CreatePolicyRequest
 import software.amazon.awssdk.services.iam.model.CreateRoleRequest
 import software.amazon.awssdk.services.iam.model.DeletePolicyRequest
 import software.amazon.awssdk.services.iam.model.DeleteRoleRequest
+import software.amazon.awssdk.services.iam.model.DetachRolePolicyRequest
 import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
@@ -208,13 +208,13 @@ class AwsCommunicator {
      *
      * For ease of use, the task definition is retrieved from the [task definition env var][ConfigKey.USER_CONTAINER_TASK_DEFINITION]
      */
-    fun createEcsService(correlationId: String, clusterName: String, serviceName: String, loadBalancer: EcsLoadBalancer): Service {
+    fun createEcsService(correlationId: String, clusterName: String, serviceName: String, taskDefinition: String, loadBalancer: EcsLoadBalancer): Service {
         // Create ECS service request
         val serviceBuilder = CreateServiceRequest.builder()
                 .cluster(clusterName)
                 .loadBalancers(loadBalancer)
                 .serviceName(serviceName)
-                .taskDefinition(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_TASK_DEFINITION))
+                .taskDefinition(taskDefinition)
                 .desiredCount(1)
                 .build()
 
@@ -277,8 +277,7 @@ class AwsCommunicator {
                 "cluster_arn" to task.clusterArn(),
                 "cpus" to task.cpu(),
                 "memory" to task.memory(),
-                "platform_version" to task.platformVersion(),
-                "started_at" to task.startedAt().toString())
+                "platform_version" to task.platformVersion())
     }
 
     /**
@@ -344,7 +343,14 @@ class AwsCommunicator {
         awsClients.iamClient.attachRolePolicy(AttachRolePolicyRequest.builder()
                 .policyArn(policy.arn())
                 .roleName(role.roleName()).build())
-        logger.info("Attched policy to role", "correlation_id" to correlationId, "policy_arn" to policy.arn(), "role_name" to role.roleName())
+        logger.info("Attached policy to role", "correlation_id" to correlationId, "policy_arn" to policy.arn(), "role_name" to role.roleName())
+    }
+
+    fun detachIamPolicyFromRole(correlationId: String, roleName: String, policyArn: String) {
+        awsClients.iamClient.detachRolePolicy(DetachRolePolicyRequest.builder()
+                .roleName(roleName)
+                .policyArn(policyArn).build())
+        logger.info("Detached policy from role", "correlation_id" to correlationId, "role_name" to roleName, "policy_arn" to policyArn)
     }
 
     fun createDynamoDbTable(tableName: String, attributes: List<AttributeDefinition>, keyName: String) {
