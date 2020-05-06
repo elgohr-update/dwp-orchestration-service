@@ -57,10 +57,12 @@ class ConfigurationResolver {
 enum class ConfigKey(val key: String, val isList: Boolean) {
     AWS_REGION("orchestrationService.aws_region", false),
     COGNITO_USER_POOL_ID("orchestrationService.cognito_user_pool_id", false),
-    LOAD_BALANCER_NAME("orchestrationService.load_balancer_name",false),
-    LOAD_BALANCER_PORT("orchestrationService.load_balancer_port",false),
-    USER_CONTAINER_TASK_DEFINITION("orchestrationService.user_container_task_definition",false),
+    LOAD_BALANCER_NAME("orchestrationService.load_balancer_name", false),
+    LOAD_BALANCER_PORT("orchestrationService.load_balancer_port", false),
     ECS_CLUSTER_NAME("orchestrationService.ecs_cluster_name", false),
     USER_CONTAINER_URL("orchestrationService.user_container_url", false),
-    USER_CONTAINER_PORT("orchestrationService.user_container_port", false)
+    USER_CONTAINER_PORT("orchestrationService.user_container_port", false),
+    USER_TASK_EXECUTION_ROLE_ARN("orchestrationService.user_task_execution_role_arn", false),
+    USER_TASK_ROLE_ARN("orchestrationService.user_task_role_arn", false),
+    ECR_ENDPOINT("orchestrationService.ecr_endpoint", false)
 }

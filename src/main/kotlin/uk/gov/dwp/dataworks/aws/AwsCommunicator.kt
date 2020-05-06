@@ -20,6 +20,10 @@ import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.RunTaskRequest
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.TaskOverride
+import software.amazon.awssdk.services.ecs.model.TaskDefinition
+import software.amazon.awssdk.services.ecs.model.ContainerDefinition
+import software.amazon.awssdk.services.ecs.model.NetworkMode
+import software.amazon.awssdk.services.ecs.model.RegisterTaskDefinitionRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Action
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateRuleRequest
@@ -68,6 +72,7 @@ class AwsCommunicator {
 
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver
+
     @Autowired
     private lateinit var awsClients: AwsClients
 
@@ -187,20 +192,6 @@ class AwsCommunicator {
         throw UpperRuleLimitReachedException("The upper limit of 1000 rules has been reached on this listener.")
     }
 
-    /**
-     * Helper method to wrap a container name and set of overrides into an incomplete [ContainerOverride.Builder] for
-     * later consumption.
-     */
-    fun buildContainerOverride(correlationId: String, containerName: String, vararg overrides: Pair<String, String>): ContainerOverride.Builder {
-        val overrideKeyPairs = overrides.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
-        logger.info("Overriding container args",
-                "correlation_id" to correlationId,
-                "container_name" to containerName,
-                "overrides" to overrideKeyPairs.joinToString { "${it.name()}:${it.value()}" })
-        return ContainerOverride.builder()
-                .name(containerName)
-                .environment(overrideKeyPairs)
-    }
 
     /**
      * Creates an ECS service with the name [clusterName], friendly service name of [serviceName] and sits
@@ -208,13 +199,13 @@ class AwsCommunicator {
      *
      * For ease of use, the task definition is retrieved from the [task definition env var][ConfigKey.USER_CONTAINER_TASK_DEFINITION]
      */
-    fun createEcsService(correlationId: String, clusterName: String, serviceName: String, taskDefinition: String, loadBalancer: EcsLoadBalancer): Service {
+    fun createEcsService(correlationId: String, clusterName: String, serviceName: String, taskDefinitionArn: String, loadBalancer: EcsLoadBalancer): Service {
         // Create ECS service request
         val serviceBuilder = CreateServiceRequest.builder()
                 .cluster(clusterName)
                 .loadBalancers(loadBalancer)
                 .serviceName(serviceName)
-                .taskDefinition(taskDefinition)
+                .taskDefinition(taskDefinitionArn)
                 .desiredCount(1)
                 .build()
 
@@ -244,40 +235,31 @@ class AwsCommunicator {
     }
 
     /**
-     * Constructs a [RunTaskRequest] with Task Overrides using the passed in parameters. [TaskOverrides][TaskOverride]
-     * are constructed from the [overrides] and applied to the ECS task definition [taskDefinition].
-     * ECS tasks will be run on EC2 instances.
-     *
-     * @param taskDefinition  The family and revision (family:revision) or full ARN of the task definition to run.
-     * If a revision is not specified, the latest ACTIVE revision is used.
+     * Registers a new [TaskDefinition] with family name [family], execution role [executionRoleArn],
+     * task role [taskRoleArn], networking mode [networkMode] (see [NetworkMode]) and container
+     * definitions [containerDefinitions] (see [ContainerDefinition])
      */
-    fun buildEcsTask(ecsClusterName: String, taskDefinition: String, taskRoleArn: String, overrides: Collection<ContainerOverride>): RunTaskRequest {
-        val taskOverride = TaskOverride.builder()
-                .containerOverrides(overrides)
+    fun registerTaskDefinition(correlationId: String, family: String, executionRoleArn: String, taskRoleArn: String, networkMode: NetworkMode, containerDefinitions: Collection<ContainerDefinition>): TaskDefinition {
+        val registerTaskDefinitionRequest = RegisterTaskDefinitionRequest.builder()
+                .family(family)
+                .executionRoleArn(executionRoleArn)
                 .taskRoleArn(taskRoleArn)
+                .networkMode(networkMode)
+                .containerDefinitions(containerDefinitions)
                 .build()
 
-        return RunTaskRequest.builder()
-                .cluster(ecsClusterName)
-                .launchType("EC2")
-                .overrides(taskOverride)
-                .taskDefinition(taskDefinition)
-                .build()
-    }
-
-    /**
-     * Runs the specified [RunTaskRequest]
-     */
-    fun runEcsTask(correlationId: String, taskRequest: RunTaskRequest) {
-        val task = awsClients.ecsClient.runTask(taskRequest).tasks()[0]
-        logger.info("ECS tasks run",
+        logger.info("Registering task definition",
                 "correlation_id" to correlationId,
-                "instance_arns" to task.containerInstanceArn(),
-                "task_groups" to task.group(),
-                "cluster_arn" to task.clusterArn(),
-                "cpus" to task.cpu(),
-                "memory" to task.memory(),
-                "platform_version" to task.platformVersion())
+                "family" to family,
+                "execution_role_arn" to executionRoleArn,
+                "task_role_arn" to taskRoleArn,
+                "network_mode" to networkMode.toString(),
+                "container_definitions" to containerDefinitions.joinToString("; ", transform = { def ->
+                    val env = def.environment().joinToString { "${it.name()}:${it.value()}" }
+                    "${def.name()}, image=${def.image()}, cpu = ${def.cpu()}, memory= ${def.memory()} env = [${env}]"
+                }))
+
+        return awsClients.ecsClient.registerTaskDefinition(registerTaskDefinitionRequest).taskDefinition()
     }
 
     /**

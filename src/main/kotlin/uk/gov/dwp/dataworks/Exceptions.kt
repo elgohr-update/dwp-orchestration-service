@@ -25,3 +25,6 @@ class UserHasNoTasksException(message: String): Exception(message)
 
 /** Used when Tasks failed to be destroyed */
 class TaskDestroyException(message: String, throwable: Throwable) : Exception(message, throwable)
+
+/** Used when JWK Keystore data cannot be accessed */
+class JWKKeystoreDataException(message: String): Exception(message)

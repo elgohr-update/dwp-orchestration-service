@@ -24,10 +24,6 @@ module "ecs-fargate-task-definition" {
   }
   environment = [
     {
-      name  = "orchestrationService.user_container_task_definition"
-      value = module.ec2_task_definition.aws_ecs_task_definition.arn
-    },
-    {
       name  = "orchestrationService.load_balancer_name"
       value = "aws-analytical-env-lb"
     },
@@ -54,6 +50,18 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.user_container_port"
       value = 8443
+    },
+    {
+      name  = "orchestrationService.user_task_execution_role_arn"
+      value = module.user-task-definition.iam_roles.task_execution_role.arn
+    },
+    {
+      name  = "orchestrationService.user_task_role_arn"
+      value = module.user-task-definition.iam_roles.task_role.arn
+    },
+    {
+      name  = "orchestrationService.ecr_endpoint"
+      value = local.ecr_endpoint
     },
     {
       name  = "orchestrationService.jupyterhub_bucket"
@@ -160,16 +168,11 @@ module "ecs-user-host" {
 ## ---------------------------------------------------------------------------------------------------------------------
 ## ECS UserService
 ## ---------------------------------------------------------------------------------------------------------------------
-module "ec2_task_definition" {
-  source      = "../../modules/ec2-task-definition"
-  name_prefix = "${var.name_prefix}-task-definition"
+module "user-task-definition" {
+  source      = "../../modules/user-task-definition"
+  name_prefix = "${var.name_prefix}-user"
 
-  chrome_image           = "${local.ecr_endpoint}/aws-analytical-env/headless-chrome"
-  guacd_image            = "${local.ecr_endpoint}/aws-analytical-env/guacd"
-  jupyterhub_image       = "${local.ecr_endpoint}/aws-analytical-env/jupyterhub"
-  guacamole_client_image = "${local.ecr_endpoint}/aws-analytical-env/guacamole"
-
-  cognito_user_pool_id = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito.user_pool_id
+  common_tags = local.common_tags
 }
 
 #

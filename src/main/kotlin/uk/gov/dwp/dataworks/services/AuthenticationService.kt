@@ -9,11 +9,14 @@ import com.auth0.jwt.interfaces.DecodedJWT
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import uk.gov.dwp.dataworks.JWKKeystoreDataException
 import uk.gov.dwp.dataworks.JWTObject
 import uk.gov.dwp.dataworks.logging.DataworksLogger
-import java.lang.IllegalArgumentException
+import java.io.BufferedReader
+import java.net.HttpURLConnection
 import java.net.URL
 import java.security.interfaces.RSAPublicKey
+import java.util.Base64
 import javax.annotation.PostConstruct
 
 /**
@@ -28,8 +31,8 @@ class AuthenticationService {
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver;
 
-    private lateinit var jwkProvider: JwkProvider
-    private lateinit var issuerUrl: String
+    internal lateinit var jwkProvider: JwkProvider
+    internal lateinit var issuerUrl: String
 
     @PostConstruct
     fun init() {
@@ -61,7 +64,22 @@ class AuthenticationService {
      */
     fun cognitoUsernameFromJwt(jwt: DecodedJWT): String {
         return jwt.getClaim("cognito:username").asString()
-        ?: jwt.getClaim("username").asString()
-        ?: throw IllegalArgumentException("No username found in JWT token")
+                ?: jwt.getClaim("username").asString()
+                ?: throw IllegalArgumentException("No username found in JWT token")
+    }
+
+    fun getB64KeyStoreData(): String {
+        val httpCon = URL(issuerUrl).openConnection() as HttpURLConnection
+        httpCon.requestMethod = "GET"
+        httpCon.setRequestProperty("Accept", "application/json")
+        httpCon.connect()
+
+        if (httpCon.responseCode != HttpURLConnection.HTTP_OK)
+            throw JWKKeystoreDataException("Error in HTTP request while getting keystore data, status code ${httpCon.responseCode} \n" +
+                    httpCon.errorStream.bufferedReader().use(BufferedReader::readText))
+
+        val keystoreData = httpCon.inputStream.bufferedReader().use(BufferedReader::readText)
+        return Base64.getEncoder().encodeToString(keystoreData.toByteArray())
+
     }
 }
