@@ -17,12 +17,12 @@ data class JWTObject(val verifiedJWT: DecodedJWT, val userName: String)
 
 data class UserTask(val correlationId: String,
                     val userName: String,
-                    val targetGroupArn: String,
-                    val albRoutingRuleArn: String,
-                    val ecsClusterName: String,
-                    val ecsServiceName: String,
-                    val iamRoleName: String,
-                    val iamPolicyArn: String) {
+                    val targetGroupArn: String?,
+                    val albRoutingRuleArn: String?,
+                    val ecsClusterName: String?,
+                    val ecsServiceName: String?,
+                    val iamRoleName: String?,
+                    val iamPolicyArn: String?) {
     companion object {
         fun from(map: Map<String, String>) = object {
             val correlationId: String by map
@@ -41,17 +41,5 @@ data class UserTask(val correlationId: String,
             return UserTask::class.declaredMemberProperties
                     .map { AttributeDefinition.builder().attributeName(it.name).attributeType(ScalarAttributeType.S).build() }
         }
-    }
-
-    fun toMap(): Map<String, String> {
-        return mapOf(
-                "correlationId" to correlationId,
-                "userName" to userName,
-                "targetGroupArn" to targetGroupArn,
-                "albRoutingRuleArn" to albRoutingRuleArn,
-                "ecsClusterName" to ecsClusterName,
-                "ecsServiceName" to ecsServiceName,
-                "iamRoleName" to iamRoleName,
-                "iamPolicyArn" to iamPolicyArn)
     }
 }
