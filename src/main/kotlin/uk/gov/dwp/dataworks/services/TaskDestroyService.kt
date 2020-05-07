@@ -30,10 +30,10 @@ class TaskDestroyService {
         val userTasks = activeUserTasks.get(userName)
 
         val destroyAttempts = listOf(
-            tryDeleteResource("target_group", userTasks.targetGroupArn)
-                { awsCommunicator.deleteTargetGroup(userTasks.correlationId, userTasks.targetGroupArn!!) },
             tryDeleteResource("alb_rule", userTasks.albRoutingRuleArn)
                 { awsCommunicator.deleteAlbRoutingRule(userTasks.correlationId, userTasks.albRoutingRuleArn!!) },
+            tryDeleteResource("target_group", userTasks.targetGroupArn)
+                { awsCommunicator.deleteTargetGroup(userTasks.correlationId, userTasks.targetGroupArn!!) },
             tryDeleteResource("ecs_service", userTasks.ecsClusterName, userTasks.ecsServiceName)
                 { awsCommunicator.deleteEcsService(userTasks.correlationId, userTasks.ecsClusterName!!, userTasks.ecsServiceName!!) },
             tryDeleteResource("detach_iam_policy", userTasks.iamRoleName, userTasks.iamPolicyArn)
