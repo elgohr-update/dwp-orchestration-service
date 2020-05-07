@@ -12,18 +12,24 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemResponse
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest
 import software.amazon.awssdk.services.ecs.model.AwsVpcConfiguration
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.CreateServiceRequest
 import software.amazon.awssdk.services.ecs.model.DeleteServiceRequest
 import software.amazon.awssdk.services.ecs.model.NetworkConfiguration
+import software.amazon.awssdk.services.ecs.model.DescribeServicesRequest
+import software.amazon.awssdk.services.ecs.model.DescribeTasksRequest
 import software.amazon.awssdk.services.ecs.model.NetworkMode
 import software.amazon.awssdk.services.ecs.model.RegisterTaskDefinitionRequest
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
+import software.amazon.awssdk.services.ecs.model.StopTaskRequest
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
+import software.amazon.awssdk.services.ecs.model.UpdateServiceRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Action
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateRuleRequest
@@ -268,9 +274,28 @@ class AwsCommunicator {
     /**
      * Deletes the [Service] from the cluster [clusterName] with the name [serviceName]. If
      * the ECS service does not exist, this function will take no action other than logging this fact.
+     *
+     * Before deleting the service, we have to wait until all tasks are stopped within it. To
+     * achieve this, we issue a scale to 0 request and poll until the service has 0 running tasks.
      */
     fun deleteEcsService(correlationId: String, clusterName: String, serviceName: String) {
         try {
+            awsClients.ecsClient.updateService(UpdateServiceRequest.builder()
+                    .cluster(clusterName)
+                    .service(serviceName)
+                    .desiredCount(0)
+                    .build()).service()
+
+            while (true) {
+                Thread.sleep(5000)
+                val service = awsClients.ecsClient.describeServices(DescribeServicesRequest.builder()
+                        .cluster(clusterName)
+                        .services(serviceName).build()).services()[0]
+                if(service.runningCount() == 0) {
+                    break
+                }
+            }
+
             awsClients.ecsClient.deleteService(
                     DeleteServiceRequest.builder()
                             .cluster(clusterName)
@@ -426,8 +451,11 @@ class AwsCommunicator {
         if(!tables.tableNames().contains(tableName)) {
             awsClients.dynamoDbClient.createTable(CreateTableRequest.builder()
                     .tableName(tableName)
-                    .attributeDefinitions(attributes)
+                    .attributeDefinitions(AttributeDefinition.builder().attributeName(keyName).attributeType(ScalarAttributeType.S).build())
                     .keySchema(KeySchemaElement.builder().attributeName(keyName).keyType(KeyType.HASH).build())
+                    .provisionedThroughput(ProvisionedThroughput.builder()
+                            .readCapacityUnits(5L)
+                            .writeCapacityUnits(5L).build())
                     .build())
             logger.info("Created dynamodb table", "table_name" to tableName)
         }
@@ -441,7 +469,7 @@ class AwsCommunicator {
     fun createDynamoDeploymentEntry(correlationId: String, userName: String) {
         val items = mapOf(
                 ActiveUserTasks.dynamoPrimaryKey to AttributeValue.builder().s(userName).build(),
-                "correlation_id" to AttributeValue.builder().s(correlationId).build())
+                "correlationId" to AttributeValue.builder().s(correlationId).build())
         awsClients.dynamoDbClient.putItem(PutItemRequest.builder()
                 .tableName(ActiveUserTasks.dynamoTableName)
                 .item(items).build())
@@ -454,11 +482,13 @@ class AwsCommunicator {
      * created for the user.
      */
     fun updateDynamoDeploymentEntry(userName: String, attribute: Pair<String, String>) {
-        val updateExpression = "SET ${attribute.first} = ${attribute.second}"
+        val updateExpression = "SET ${attribute.first} = :value"
         awsClients.dynamoDbClient.updateItem(UpdateItemRequest.builder()
                 .tableName(ActiveUserTasks.dynamoTableName)
                 .key(mapOf(ActiveUserTasks.dynamoPrimaryKey to AttributeValue.builder().s(userName).build()))
-                .updateExpression(updateExpression).build())
+                .updateExpression(updateExpression)
+                .expressionAttributeValues(mapOf(":value" to AttributeValue.builder().s(attribute.second).build()))
+                .build())
         logger.debug("Updated dynamodb item", "primary_key" to userName,
                 "attribute_name" to attribute.first,
                 "attribute_value" to attribute.second)

@@ -2,6 +2,7 @@ package uk.gov.dwp.dataworks.services
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -18,7 +19,12 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.junit4.SpringRunner
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.DeleteServiceRequest
+import software.amazon.awssdk.services.ecs.model.DescribeServicesRequest
+import software.amazon.awssdk.services.ecs.model.DescribeServicesResponse
+import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
+import software.amazon.awssdk.services.ecs.model.UpdateServiceRequest
+import software.amazon.awssdk.services.ecs.model.UpdateServiceResponse
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DeleteRuleRequest
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DeleteTargetGroupRequest
@@ -175,7 +181,7 @@ class AwsCommunicatorTest {
 
     @Test
     fun `Delete ecs service does not fail when service not found`() {
-        whenever(mockEcsClient.deleteService(any<DeleteServiceRequest>()))
+        whenever(mockEcsClient.updateService(any<UpdateServiceRequest>()))
                 .thenThrow(ServiceNotFoundException.builder().build())
         assertThatCode { awsCommunicator.deleteEcsService("correlation", "clusterName", "serviceName") }.doesNotThrowAnyException()
     }
@@ -184,6 +190,12 @@ class AwsCommunicatorTest {
     fun `Delete ecs service attempts deletion when service found`() {
         whenever(mockEcsClient.deleteService(any<DeleteServiceRequest>()))
                 .thenReturn(null)
+        whenever(mockEcsClient.updateService(any<UpdateServiceRequest>())).thenReturn(UpdateServiceResponse.builder().build())
+
+        val mockService = Service.builder().runningCount(0).build()
+        whenever(mockEcsClient.describeServices(any<DescribeServicesRequest>()))
+                .thenReturn(DescribeServicesResponse.builder().services(mockService).build())
+
         awsCommunicator.deleteEcsService("correlation", "clusterName", "serviceName")
         verify(mockEcsClient).deleteService(any<DeleteServiceRequest>())
     }

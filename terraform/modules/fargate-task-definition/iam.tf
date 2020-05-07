@@ -27,6 +27,7 @@ data "aws_iam_policy_document" "task_role" {
       "ecs:DescribeTaskDefinition",
       "ecs:RegisterTaskDefinition",
       "ecs:RunTask",
+      "ecs:UpdateService",
       "elasticloadbalancing:CreateRule",
       "elasticloadbalancing:CreateTargetGroup",
       "elasticloadbalancing:DeleteTargetGroup",

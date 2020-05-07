@@ -85,6 +85,9 @@ class TaskDeploymentService {
             // ECS
             awsCommunicator.createEcsService(correlationId, userName, ecsClusterName, taskDefinition, ecsLoadBalancer, taskSubnets, taskSecurityGroups)
         } catch (e: Exception) {
+            logger.error("Failed to create resources for user", e, "correlation_id" to correlationId, "user_name" to userName)
+            // Pause to allow eventual consistency
+            Thread.sleep(5000)
             taskDestroyService.destroyServices(userName)
             throw e
         }

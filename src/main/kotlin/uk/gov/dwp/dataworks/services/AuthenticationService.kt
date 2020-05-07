@@ -32,13 +32,15 @@ class AuthenticationService {
     private lateinit var configurationResolver: ConfigurationResolver;
 
     internal lateinit var jwkProvider: JwkProvider
+    internal lateinit var jwkProviderUrl: URL
     internal lateinit var issuerUrl: String
 
     @PostConstruct
     fun init() {
         val userPoolId: String = configurationResolver.getStringConfig(ConfigKey.COGNITO_USER_POOL_ID)
         issuerUrl = "https://cognito-idp.${configurationResolver.awsRegion}.amazonaws.com/$userPoolId"
-        jwkProvider = UrlJwkProvider(URL("$issuerUrl/.well-known/jwks.json"))
+        jwkProviderUrl = URL("$issuerUrl/.well-known/jwks.json")
+        jwkProvider = UrlJwkProvider(jwkProviderUrl)
         logger.info("initialised JWK Provider", "user_pool_id" to userPoolId)
     }
 
@@ -69,7 +71,7 @@ class AuthenticationService {
     }
 
     fun getB64KeyStoreData(): String {
-        val httpCon = URL(issuerUrl).openConnection() as HttpURLConnection
+        val httpCon = jwkProviderUrl.openConnection() as HttpURLConnection
         httpCon.requestMethod = "GET"
         httpCon.setRequestProperty("Accept", "application/json")
         httpCon.connect()
