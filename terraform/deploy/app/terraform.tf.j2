@@ -94,7 +94,8 @@ data "terraform_remote_state" "ingestion" {
 }
 
 data "terraform_remote_state" "frontend-service" {
-  backend = "s3"
+  backend   = "s3"
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"
