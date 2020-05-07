@@ -422,7 +422,9 @@ class AwsCommunicator {
         val items = mapOf(
                 ActiveUserTasks.dynamoPrimaryKey to AttributeValue.builder().s(userName).build(),
                 "correlation_id" to AttributeValue.builder().s(correlationId).build())
-        awsClients.dynamoDbClient.putItem(PutItemRequest.builder().item(items).build())
+        awsClients.dynamoDbClient.putItem(PutItemRequest.builder()
+                .tableName(ActiveUserTasks.dynamoTableName)
+                .item(items).build())
         logger.info("Created dynamodb entry", "correlation_id" to correlationId, "items" to items.toString())
     }
 
