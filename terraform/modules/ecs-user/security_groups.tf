@@ -42,3 +42,13 @@ resource "aws_security_group_rule" "http_to_s3" {
   prefix_list_ids   = [var.vpc.s3_prefix_list_id]
   type              = "egress"
 }
+
+resource "aws_security_group_rule" "source_fe" {
+  description              = "Allow HTTPS Range from Frontend LB (Dynamic ports assigned to user)" # this is likely to change
+  protocol                 = "tcp"
+  from_port                = 8000
+  to_port                  = 9000
+  security_group_id        = var.vpc.interface_vpce_sg_id
+  source_security_group_id = var.frontend_alb_sg_id
+  type                     = "ingress"
+}

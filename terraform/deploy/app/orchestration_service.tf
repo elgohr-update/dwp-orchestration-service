@@ -25,7 +25,7 @@ module "ecs-fargate-task-definition" {
   environment = [
     {
       name  = "orchestrationService.load_balancer_name"
-      value = "aws-analytical-env-lb"
+      value = data.terraform_remote_state.frontend-service.outputs.fe_service.lb.name
     },
     {
       name  = "orchestrationService.load_balancer_port"
@@ -37,15 +37,15 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.cognito_user_pool_id"
-      value = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito.user_pool_id
+      value = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito-fs.user_pool_id
     },
     {
       name  = "orchestrationService.ecs_cluster_name"
-      value = "${var.name_prefix}-user-host"
+      value = module.ecs-user-host.outputs.ecs_cluster.name
     },
     {
       name  = "orchestrationService.user_container_url"
-      value = "aws-analytical-env.${local.root_dns_prefix[local.environment]}.${local.parent_domain_name[local.environment]}"
+      value = data.terraform_remote_state.frontend-service.outputs.fe_service.fqdn
     },
     {
       name  = "orchestrationService.user_container_port"
@@ -154,9 +154,10 @@ module "ecs-user-host" {
     min_size              = 1
     max_instance_lifetime = 604800
   }
-  common_tags   = merge(local.common_tags, { Name = "${var.name_prefix}-user-host" })
-  instance_type = "t3.2xlarge"
-  name_prefix   = "${var.name_prefix}-user-host"
+  common_tags        = merge(local.common_tags, { Name = "${var.name_prefix}-user-host" })
+  instance_type      = "t3.2xlarge"
+  name_prefix        = "${var.name_prefix}-user-host"
+  frontend_alb_sg_id = data.terraform_remote_state.frontend-service.outputs.fe_service.lb_sg.id
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
@@ -172,7 +173,8 @@ module "user-task-definition" {
   source      = "../../modules/user-task-definition"
   name_prefix = "${var.name_prefix}-user"
 
-  common_tags = local.common_tags
+  common_tags          = local.common_tags
+  cognito_user_pool_id = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito-fs.user_pool_id
 }
 
 #

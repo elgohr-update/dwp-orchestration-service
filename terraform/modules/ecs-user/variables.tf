@@ -32,3 +32,8 @@ variable "auto_scaling" {
     max_instance_lifetime = number
   })
 }
+
+variable frontend_alb_sg_id {
+  type        = string
+  description = "(Required) Source ALB Security group"
+}

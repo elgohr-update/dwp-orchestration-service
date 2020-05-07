@@ -93,6 +93,19 @@ data "terraform_remote_state" "ingestion" {
   }
 }
 
+data "terraform_remote_state" "frontend-service" {
+  backend = "s3"
+
+  config = {
+    bucket         = "{{state_file_bucket}}"
+    key            = "terraform/dataworks/analytical-frontend-service.tfstate"
+    region         = "{{state_file_region}}"
+    encrypt        = true
+    kms_key_id     = "arn:aws:kms:{{state_file_region}}:{{state_file_account}}:key/{{state_file_kms_key}}"
+    dynamodb_table = "remote_state_locks"
+  }
+}
+
 provider "aws" {
   version = "~> 2.46.0"
   region = "{{provider_region}}"

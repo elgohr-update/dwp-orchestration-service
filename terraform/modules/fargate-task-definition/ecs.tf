@@ -61,5 +61,5 @@ resource "aws_ecs_task_definition" "td" {
 
 resource "aws_cloudwatch_log_group" "lamda_logs" {
   name              = var.log_configuration.options["awslogs-group"]
-  retention_in_days = 14
+  retention_in_days = 180
 }
