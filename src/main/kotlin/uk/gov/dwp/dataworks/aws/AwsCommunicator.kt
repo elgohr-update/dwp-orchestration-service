@@ -48,6 +48,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.RuleConditio
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.RuleNotFoundException
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroup
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroupNotFoundException
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.AttachRolePolicyRequest
 import software.amazon.awssdk.services.iam.model.CreatePolicyRequest
 import software.amazon.awssdk.services.iam.model.CreateRoleRequest
@@ -113,7 +114,7 @@ class AwsCommunicator {
      * Creates and returns a [TargetGroup] in the given VPC. This target group can later be assigned to
      * a [LoadBalancer] using it's ARN or [ElasticLoadBalancingV2Client.registerTargets].
      */
-    fun createTargetGroup(correlationId: String, userName: String, vpcId: String, targetPort: Int): TargetGroup {
+    fun createTargetGroup(correlationId: String, userName: String, vpcId: String, targetPort: Int, targetType: TargetTypeEnum): TargetGroup {
         val targetGroupName = "os-user-$userName-tg"
         // Create HTTPS target group in VPC to port containerPort
         val targetGroupResponse = awsClients.albClient.createTargetGroup(
@@ -122,6 +123,7 @@ class AwsCommunicator {
                         .protocol("HTTPS")
                         .vpcId(vpcId)
                         .port(targetPort)
+                        .targetType(targetType)
                         .build())
         val targetGroup = targetGroupResponse.targetGroups().first { it.port() == targetPort }
         logger.info("Created target group",

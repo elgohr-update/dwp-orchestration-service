@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.LoadBalancer
 import software.amazon.awssdk.services.ecs.model.NetworkMode
 import software.amazon.awssdk.services.ecs.model.PortMapping
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import uk.gov.dwp.dataworks.UserTask
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.logging.DataworksLogger
@@ -62,7 +63,7 @@ class TaskDeploymentService {
             // Load balancer & Routing
             val loadBalancer = awsCommunicator.getLoadBalancerByName(albName)
             val listener = awsCommunicator.getAlbListenerByPort(loadBalancer.loadBalancerArn(), albPort)
-            val targetGroup = awsCommunicator.createTargetGroup(correlationId, userName, loadBalancer.vpcId(), containerPort)
+            val targetGroup = awsCommunicator.createTargetGroup(correlationId, userName, loadBalancer.vpcId(), containerPort, TargetTypeEnum.IP)
 
             // There are 2 distinct LoadBalancer classes in the AWS SDK - ELBV2 and ECS. They represent the same LB but in different ways.
             // The following is the load balancer needed to create an ECS service.
