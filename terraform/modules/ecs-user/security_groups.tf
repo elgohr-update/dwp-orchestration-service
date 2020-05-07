@@ -44,11 +44,21 @@ resource "aws_security_group_rule" "http_to_s3" {
 }
 
 resource "aws_security_group_rule" "source_fe" {
-  description              = "Allow HTTPS Range from Frontend LB (Dynamic ports assigned to user)" # this is likely to change
+  description              = "Allow HTTPS from Frontend LB"
   protocol                 = "tcp"
-  from_port                = 8000
-  to_port                  = 9000
-  security_group_id        = var.vpc.interface_vpce_sg_id
+  from_port                = var.guacamole_port
+  to_port                  = var.guacamole_port
+  security_group_id        = aws_security_group.user_host.id
   source_security_group_id = var.frontend_alb_sg_id
   type                     = "ingress"
+}
+
+resource "aws_security_group_rule" "egress_lb_to_host" {
+  description              = "Allow LB HTTPS to user host"
+  protocol                 = "tcp"
+  from_port                = var.guacamole_port
+  to_port                  = var.guacamole_port
+  security_group_id        = var.frontend_alb_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "egress"
 }

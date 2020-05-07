@@ -14,9 +14,11 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest
+import software.amazon.awssdk.services.ecs.model.AwsVpcConfiguration
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.CreateServiceRequest
 import software.amazon.awssdk.services.ecs.model.DeleteServiceRequest
+import software.amazon.awssdk.services.ecs.model.NetworkConfiguration
 import software.amazon.awssdk.services.ecs.model.NetworkMode
 import software.amazon.awssdk.services.ecs.model.RegisterTaskDefinitionRequest
 import software.amazon.awssdk.services.ecs.model.Service
@@ -51,6 +53,7 @@ import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
 import uk.gov.dwp.dataworks.MultipleLoadBalancersMatchedException
+import uk.gov.dwp.dataworks.NetworkConfigurationMissingException
 import uk.gov.dwp.dataworks.UpperRuleLimitReachedException
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import uk.gov.dwp.dataworks.services.ActiveUserTasks
@@ -221,19 +224,36 @@ class AwsCommunicator {
      *
      * For ease of use, the task definition is retrieved from the [task definition env var][ConfigKey.USER_CONTAINER_TASK_DEFINITION]
      */
-    fun createEcsService(correlationId: String, userName: String, clusterName: String, taskDefinitionArn: String, loadBalancer: EcsLoadBalancer): Service {
+    fun createEcsService(correlationId: String, userName: String, clusterName: String, taskDefinition: TaskDefinition, loadBalancer: EcsLoadBalancer,
+                         subnets: Collection<String>? = null, securityGroups: Collection<String>? = null): Service {
+
         val serviceName = "$userName-analytical-workspace"
+
         // Create ECS service request
         val serviceBuilder = CreateServiceRequest.builder()
                 .cluster(clusterName)
                 .loadBalancers(loadBalancer)
                 .serviceName(serviceName)
-                .taskDefinition(taskDefinitionArn)
+                .taskDefinition(taskDefinition.taskDefinitionArn())
                 .desiredCount(1)
-                .build()
+
+        // Configure networking if AWSVPC networking mode is used
+        if (taskDefinition.networkMode() == NetworkMode.AWSVPC) {
+            if(subnets == null || securityGroups == null)
+                throw NetworkConfigurationMissingException("Arguments subnets and securityGroups are required when using AWSVPC networking mode")
+
+            val awsVpcConfiguration = AwsVpcConfiguration.builder()
+                    .subnets(subnets)
+                    .securityGroups(securityGroups)
+                    .build()
+
+            serviceBuilder.networkConfiguration(NetworkConfiguration.builder()
+                    .awsvpcConfiguration(awsVpcConfiguration)
+                    .build())
+        }
 
         //Create the service
-        val ecsService = awsClients.ecsClient.createService(serviceBuilder).service()
+        val ecsService = awsClients.ecsClient.createService(serviceBuilder.build()).service()
         logger.info("Created ECS Service",
                 "correlation_id" to correlationId,
                 "cluster_name" to clusterName,

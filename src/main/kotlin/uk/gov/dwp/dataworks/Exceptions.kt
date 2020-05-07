@@ -28,3 +28,6 @@ class TaskDestroyException(message: String, throwable: Throwable) : Exception(me
 
 /** Used when JWK Keystore data cannot be accessed */
 class JWKKeystoreDataException(message: String): Exception(message)
+
+/** Used when network configuration is missing for AWSVPC netowrking mode */
+class NetworkConfigurationMissingException(message: String): Exception(message)

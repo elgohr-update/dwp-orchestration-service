@@ -37,3 +37,8 @@ variable frontend_alb_sg_id {
   type        = string
   description = "(Required) Source ALB Security group"
 }
+
+variable guacamole_port {
+  type        = number
+  description = "Port used for listening by the user guacamole container"
+}

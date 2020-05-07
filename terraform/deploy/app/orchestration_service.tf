@@ -49,7 +49,7 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.user_container_port"
-      value = 8443
+      value = local.guacamole_port
     },
     {
       name  = "orchestrationService.user_task_execution_role_arn"
@@ -58,6 +58,14 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.user_task_role_arn"
       value = module.user-task-definition.iam_roles.task_role.arn
+    },
+    {
+      name  = "orchestrationService.user_task_security_groups"
+      value = module.ecs-user-host.outputs.security_group_id
+    },
+    {
+      name  = "orchestrationService.user_task_subnets"
+      value = join(",", data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private[*].id)
     },
     {
       name  = "orchestrationService.ecr_endpoint"
@@ -158,6 +166,7 @@ module "ecs-user-host" {
   instance_type      = "t3.2xlarge"
   name_prefix        = "${var.name_prefix}-user-host"
   frontend_alb_sg_id = data.terraform_remote_state.frontend-service.outputs.fe_service.lb_sg.id
+  guacamole_port     = local.guacamole_port
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
@@ -173,8 +182,7 @@ module "user-task-definition" {
   source      = "../../modules/user-task-definition"
   name_prefix = "${var.name_prefix}-user"
 
-  common_tags          = local.common_tags
-  cognito_user_pool_id = data.terraform_remote_state.aws_analytical_env_cognito.outputs.cognito-fs.user_pool_id
+  common_tags = local.common_tags
 }
 
 #
