@@ -45,6 +45,7 @@ class ConnectionControllerTest {
         System.setProperty(ConfigKey.COGNITO_USER_POOL_ID.key, "test_id")
         System.setProperty(ConfigKey.ECS_CLUSTER_NAME.key, "test_ecs")
         System.setProperty(ConfigKey.USER_CONTAINER_URL.key, "test_url")
+        System.setProperty(ConfigKey.DEBUG.key, "true")
         val jwtObject = JWTObject(mock<DecodedJWT>(), "test_user")
         whenever(authService.validate(any())).thenReturn(jwtObject)
     }
@@ -93,14 +94,14 @@ class ConnectionControllerTest {
                 .andExpect(status().isOk)
     }
     @Test
-    fun `Endpoint deployusercontainers returns '405 not supported' for GET requests`() {
-        mvc.perform(get("/deployusercontainers"))
+    fun `Endpoint debug deploy returns '405 not supported' for GET requests`() {
+        mvc.perform(get("/debug/deploy"))
                 .andExpect(MockMvcResultMatchers.status().isMethodNotAllowed)
     }
 
     @Test
-    fun `200 returned from deployusercontainers with well formed request`() {
-        mvc.perform(post("/deployusercontainers")
+    fun `200 returned from debug deploy with well formed request`() {
+        mvc.perform(post("/debug/deploy")
                 .header("Authorisation", "test_user")
                 .header("content-type", "application/json")
                 .content("{\"emrClusterHostName\":\"\"}"))
@@ -108,8 +109,8 @@ class ConnectionControllerTest {
     }
 
     @Test
-    fun `400 with missing Authorisation from header deployusercontainers`() {
-        mvc.perform(post("/deployusercontainers")
+    fun `400 with missing Authorisation from header debug deploy`() {
+        mvc.perform(post("/debug/deploy")
                 .content("{}")
                 .header("content-type", "application/json"))
                 .andExpect(status().isBadRequest)

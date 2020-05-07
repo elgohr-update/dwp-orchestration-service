@@ -55,6 +55,7 @@ class ConfigurationResolver {
 }
 
 enum class ConfigKey(val key: String, val isList: Boolean) {
+    DEBUG("orchestrationService.debug", false),
     AWS_REGION("orchestrationService.aws_region", false),
     COGNITO_USER_POOL_ID("orchestrationService.cognito_user_pool_id", false),
     LOAD_BALANCER_NAME("orchestrationService.load_balancer_name", false),

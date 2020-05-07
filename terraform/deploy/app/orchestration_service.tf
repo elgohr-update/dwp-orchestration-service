@@ -24,6 +24,10 @@ module "ecs-fargate-task-definition" {
   }
   environment = [
     {
+      name  = "orchestrationService.debug"
+      value = "true"
+    },
+    {
       name  = "orchestrationService.load_balancer_name"
       value = data.terraform_remote_state.frontend-service.outputs.fe_service.lb.name
     },

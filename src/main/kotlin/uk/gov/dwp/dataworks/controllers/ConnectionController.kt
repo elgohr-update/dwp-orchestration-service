@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.HttpClientErrorException
 import uk.gov.dwp.dataworks.DeployRequest
+import uk.gov.dwp.dataworks.ForbiddenException
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import uk.gov.dwp.dataworks.services.ActiveUserTasks
 import uk.gov.dwp.dataworks.services.AuthenticationService
@@ -52,7 +54,7 @@ class ConnectionController {
     @ResponseStatus(HttpStatus.OK)
     fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): String {
         val jwtObject = authService.validate(token)
-        return handleRequest(jwtObject.userName, requestBody)
+        return handleConnectRequest(jwtObject.userName, requestBody)
     }
 
     @Operation(summary = "Requests the user containers",
@@ -61,10 +63,19 @@ class ConnectionController {
         ApiResponse(responseCode = "200", description = "Success"),
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
-
-    @PostMapping("/deployusercontainers")
+    @PostMapping("/debug/deploy")
     fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestBody requestBody: DeployRequest): String {
-        return handleRequest(userName, requestBody)
+        if (configurationResolver.getStringConfig(ConfigKey.DEBUG) != "true" )
+            throw ForbiddenException("Debug routes not enabled")
+        return handleConnectRequest(userName, requestBody)
+    }
+
+    @PostMapping("/debug/destroy")
+    @ResponseStatus(HttpStatus.OK)
+    fun destroyTask(@RequestHeader("Authorisation") userName: String, @RequestBody requestBody: DeployRequest) {
+        if (configurationResolver.getStringConfig(ConfigKey.DEBUG) != "true" )
+            throw ForbiddenException("Debug routes not enabled")
+        taskDestroyService.destroyServices(userName)
     }
 
     @Operation(summary = "Disconnect from Analytical Environment",
@@ -86,7 +97,7 @@ class ConnectionController {
         // Do nothing - annotations handle response
     }
 
-    fun handleRequest(userName: String, requestBody: DeployRequest):String {
+    fun handleConnectRequest(userName: String, requestBody: DeployRequest): String {
         if (activeUserTasks.contains(userName)) {
             logger.info("Redirecting user to running containers, as they exist")
         } else {
