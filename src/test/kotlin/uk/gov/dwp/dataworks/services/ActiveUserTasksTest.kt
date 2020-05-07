@@ -25,7 +25,7 @@ class ActiveUserTasksTest {
 
     @Before
     fun setup() {
-        whenever(awsCommunicator.getDynamoDeploymentEntry(any())).thenReturn(GetItemResponse.builder().build())
+        whenever(awsCommunicator.getDynamoDeploymentEntry(any())).thenAnswer { UserHasNoTasksException("") }
     }
 
     @Test

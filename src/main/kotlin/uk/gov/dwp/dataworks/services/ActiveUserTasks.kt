@@ -33,7 +33,7 @@ class ActiveUserTasks {
         try {
             val item = awsCommunicator.getDynamoDeploymentEntry(userName).item()
                     .mapValues { it.value.s() }
-            return UserTask.from(item)
+            return UserTask.from(item.withDefault { "" })
         } catch (e: Exception) {
             throw UserHasNoTasksException("No tasks found for $userName")
         }
