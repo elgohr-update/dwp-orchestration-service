@@ -13,16 +13,6 @@ resource "aws_security_group" "lb_sg" {
   tags        = merge(var.common_tags, { Name = "${var.name_prefix}-lb-sg" })
 }
 
-resource aws_security_group_rule ingress_to_alb {
-  description       = "ingress_to_alb"
-  from_port         = 443
-  protocol          = "tcp"
-  security_group_id = aws_security_group.lb_sg.id
-  to_port           = 443
-  type              = "ingress"
-  cidr_blocks       = [data.aws_vpc.vpc.cidr_block]
-}
-
 resource aws_security_group_rule ingress_from_alb {
   description              = "ingress_from_alb"
   from_port                = var.container_port
