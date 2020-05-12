@@ -5,4 +5,4 @@ ignore:
   SNYK-JAVA-IONETTY-564897:
     - '*':
         reason: introduced by AWS SDK, current fix has not been officially released.
-        expires: 2020-05-11T00:00:00.000Z
+        expires: 2020-07-11T00:00:00.000Z

@@ -44,7 +44,7 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(userName: String, emrClusterHostName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun runContainers(userName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
         val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
@@ -55,6 +55,7 @@ class TaskDeploymentService {
         val albPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.LOAD_BALANCER_PORT))
         val albName = configurationResolver.getStringConfig(ConfigKey.LOAD_BALANCER_NAME)
         val ecsClusterName = configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME)
+        val emrClusterHostname = configurationResolver.getStringConfig(ConfigKey.EMR_CLUSTER_HOSTNAME)
 
         //Create an entry in DynamoDB for current deployment
         activeUserTasks.initialiseDeploymentEntry(correlationId, userName)
@@ -80,7 +81,7 @@ class TaskDeploymentService {
             val iamRole = awsCommunicator.createIamRole(correlationId, userName, taskAssumeRoleString)
             awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
 
-            val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostName, jupyterMemory, jupyterCpu, containerPort)
+            val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostname, jupyterMemory, jupyterCpu, containerPort)
             val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId,"orchestration-service-user-$userName-td", taskExecutionRoleArn , taskRoleArn, NetworkMode.AWSVPC, containerDefinitions)
 
             // ECS

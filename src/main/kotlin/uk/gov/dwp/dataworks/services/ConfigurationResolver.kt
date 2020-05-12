@@ -61,6 +61,7 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     LOAD_BALANCER_NAME("orchestrationService.load_balancer_name", false),
     LOAD_BALANCER_PORT("orchestrationService.load_balancer_port", false),
     ECS_CLUSTER_NAME("orchestrationService.ecs_cluster_name", false),
+    EMR_CLUSTER_HOSTNAME("orchestrationService.emr_cluster_hostname", false),
     USER_CONTAINER_URL("orchestrationService.user_container_url", false),
     USER_CONTAINER_PORT("orchestrationService.user_container_port", false),
     USER_TASK_EXECUTION_ROLE_ARN("orchestrationService.user_task_execution_role_arn", false),

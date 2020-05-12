@@ -7,7 +7,6 @@ import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import kotlin.reflect.full.declaredMemberProperties
 
 data class DeployRequest @JsonCreator constructor(
-        val emrClusterHostName: String,
         val jupyterCpu: Int = 512,
         val jupyterMemory: Int = 512,
         val additionalPermissions: List<String> = emptyList()

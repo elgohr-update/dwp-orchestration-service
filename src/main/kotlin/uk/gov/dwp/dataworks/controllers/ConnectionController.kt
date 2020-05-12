@@ -103,7 +103,6 @@ class ConnectionController {
         } else {
             taskDeploymentService.runContainers(
                     userName,
-                    requestBody.emrClusterHostName,
                     requestBody.jupyterCpu,
                     requestBody.jupyterMemory,
                     requestBody.additionalPermissions)

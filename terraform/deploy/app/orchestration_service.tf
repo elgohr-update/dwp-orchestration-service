@@ -48,6 +48,10 @@ module "ecs-fargate-task-definition" {
       value = module.ecs-user-host.outputs.ecs_cluster.name
     },
     {
+      name  = "orchestrationService.emr_cluster_hostname"
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname
+    },
+    {
       name  = "orchestrationService.user_container_url"
       value = data.terraform_remote_state.frontend-service.outputs.fe_service.fqdn
     },
