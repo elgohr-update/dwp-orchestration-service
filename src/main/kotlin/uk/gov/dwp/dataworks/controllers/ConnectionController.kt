@@ -25,6 +25,8 @@ import uk.gov.dwp.dataworks.services.ConfigKey
 import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import uk.gov.dwp.dataworks.services.TaskDeploymentService
 import uk.gov.dwp.dataworks.services.TaskDestroyService
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 @RestController
 @CrossOrigin
@@ -92,9 +94,9 @@ class ConnectionController {
     }
 
     @ExceptionHandler(JWTVerificationException::class, SigningKeyNotFoundException::class)
-    @ResponseStatus(value = HttpStatus.UNAUTHORIZED, reason = "Invalid authentication token")
-    fun handleInvalidToken() {
-        // Do nothing - annotations handle response
+    fun handleInvalidToken(res: HttpServletResponse, ex: Exception) {
+        logger.warn("Failed to verify JWT token $ex")
+        res.sendError(HttpStatus.UNAUTHORIZED.value(), "Failed to verify JWT token")
     }
 
     fun handleConnectRequest(userName: String, requestBody: DeployRequest): String {
