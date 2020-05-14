@@ -35,6 +35,10 @@ class TaskDeploymentService {
 
     @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
     lateinit var taskAssumeRoleDocument: Resource
+    @Value("classpath:policyDocuments/taskRolePolicy.json")
+    lateinit var taskRoleDocument: Resource
+    @Value("classpath:policyDocuments/jupyterBucketAccessPolicy.json")
+    lateinit var jupyterBucketAccessDocument: Resource
 
     companion object {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
@@ -73,7 +77,7 @@ class TaskDeploymentService {
             awsCommunicator.createAlbRoutingRule(correlationId, userName, listener.listenerArn(), targetGroup.targetGroupArn())
 
             //IAM Permissions
-            val taskRolePolicyString = awsParsing.parsePolicyDocument("policyDocuments/taskRolePolicy.json", mapOf("ecs-task-role-policy" to additionalPermissions), "Actions")
+            val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecs-task-role-policy" to additionalPermissions), "Actions")
             val taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
             val iamPolicy = awsCommunicator.createIamPolicy(correlationId, "$userName-task-role-document", taskRolePolicyString)
             val iamRole = awsCommunicator.createIamRole(correlationId, "$userName-iam-role", taskAssumeRoleString)
@@ -187,7 +191,7 @@ class TaskDeploymentService {
     }
 
     fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String): Policy {
-        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument("policyDocuments/jupyterBucketAccessPolicy.json", parseMap(cognitoGroups, userName), "Resources")
+        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, parseMap(cognitoGroups, userName), "Resources")
         return awsCommunicator.createIamPolicy(correlationId, "$userName-jupyter-s3-document", jupyterBucketAccessRolePolicyString)
     }
 
