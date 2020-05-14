@@ -58,16 +58,30 @@ class AuthenticationService {
                 .build()
                 .verify(userJwt)
 
-        return JWTObject(jwt, cognitoUsernameFromJwt(userJwt))
+        return JWTObject(
+                jwt,
+                userNameFromJwt(userJwt),
+                groupsFromJwt(userJwt)
+        )
     }
 
     /**
      * Helper method to extract the Cognito username from a JWT Payload.
      */
-    fun cognitoUsernameFromJwt(jwt: DecodedJWT): String {
-        return jwt.getClaim("cognito:username").asString()
+    fun userNameFromJwt(jwt: DecodedJWT): String {
+        val username = jwt.getClaim("cognito:username").asString()
                 ?: jwt.getClaim("username").asString()
                 ?: throw IllegalArgumentException("No username found in JWT token")
+        return username
+    }
+
+    /**
+     * Helper method to extract groups from a JWT Payload.
+     */
+    fun groupsFromJwt(jwt: DecodedJWT): List<String> {
+        val groups = jwt.getClaim("cognito:groups").asList(String::class.java)
+                ?: throw IllegalArgumentException("No cognito groups found in JWT token")
+        return groups
     }
 
     fun getB64KeyStoreData(): String {
@@ -82,6 +96,5 @@ class AuthenticationService {
 
         val keystoreData = httpCon.inputStream.bufferedReader().use(BufferedReader::readText)
         return Base64.getEncoder().encodeToString(keystoreData.toByteArray())
-
     }
 }

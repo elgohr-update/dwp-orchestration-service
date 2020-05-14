@@ -56,7 +56,7 @@ class ConnectionController {
     @ResponseStatus(HttpStatus.OK)
     fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): String {
         val jwtObject = authService.validate(token)
-        return handleConnectRequest(jwtObject.userName, requestBody)
+        return handleConnectionRequest(jwtObject.userName, jwtObject.cognitoGroup, requestBody)
     }
 
     @Operation(summary = "Requests the user containers",
@@ -66,10 +66,10 @@ class ConnectionController {
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
     @PostMapping("/debug/deploy")
-    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestBody requestBody: DeployRequest): String {
+    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestHeader("Authorisation") cognitoGroups: List<String>, @RequestBody requestBody: DeployRequest): String {
         if (configurationResolver.getStringConfig(ConfigKey.DEBUG) != "true" )
             throw ForbiddenException("Debug routes not enabled")
-        return handleConnectRequest(userName, requestBody)
+        return handleConnectionRequest(userName,cognitoGroups, requestBody)
     }
 
     @PostMapping("/debug/destroy")
@@ -99,12 +99,13 @@ class ConnectionController {
         res.sendError(HttpStatus.UNAUTHORIZED.value(), "Failed to verify JWT token")
     }
 
-    fun handleConnectRequest(userName: String, requestBody: DeployRequest): String {
+    fun handleConnectionRequest(userName: String, cognitoGroups: List<String>, requestBody: DeployRequest):String {
         if (activeUserTasks.contains(userName)) {
             logger.info("Redirecting user to running containers, as they exist")
         } else {
             taskDeploymentService.runContainers(
                     userName,
+                    cognitoGroups,
                     requestBody.jupyterCpu,
                     requestBody.jupyterMemory,
                     requestBody.additionalPermissions)

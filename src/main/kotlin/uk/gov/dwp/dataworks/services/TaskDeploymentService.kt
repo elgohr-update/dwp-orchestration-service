@@ -6,14 +6,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
-import software.amazon.awssdk.services.ecs.model.ContainerOverride
 import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.LoadBalancer
 import software.amazon.awssdk.services.ecs.model.NetworkMode
 import software.amazon.awssdk.services.ecs.model.PortMapping
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
-import uk.gov.dwp.dataworks.UserTask
+import software.amazon.awssdk.services.iam.model.Policy
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
+import uk.gov.dwp.dataworks.aws.AwsParsing
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.util.UUID
 
@@ -25,26 +25,21 @@ class TaskDeploymentService {
     private lateinit var activeUserTasks: ActiveUserTasks
     @Autowired
     private lateinit var taskDestroyService: TaskDestroyService
-
+    @Autowired
+    private lateinit var awsParsing: AwsParsing
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver
-
     @Autowired
     private lateinit var authService: AuthenticationService
 
     @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
     lateinit var taskAssumeRoleDocument: Resource
-    private lateinit var taskAssumeRoleString: String
-
-    @Value("classpath:policyDocuments/taskRolePolicy.json")
-    lateinit var taskRolePolicyDocument: Resource
-    private lateinit var taskRolePolicyString: String
 
     companion object {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(userName: String, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun runContainers(userName: String, cognitoGroups: List<String>, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
         val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
@@ -59,6 +54,7 @@ class TaskDeploymentService {
 
         //Create an entry in DynamoDB for current deployment
         activeUserTasks.initialiseDeploymentEntry(correlationId, userName)
+
 
         try {
             // Load balancer & Routing
@@ -75,11 +71,13 @@ class TaskDeploymentService {
                     .build()
             awsCommunicator.createAlbRoutingRule(correlationId, userName, listener.listenerArn(), targetGroup.targetGroupArn())
 
-            // IAM permissions
-            parsePolicyDocuments(additionalPermissions)
-            val iamPolicy = awsCommunicator.createIamPolicy(correlationId, userName, taskRolePolicyString)
-            val iamRole = awsCommunicator.createIamRole(correlationId, userName, taskAssumeRoleString)
+            //IAM Permissions
+            val taskRolePolicyString = awsParsing.parsePolicyDocument("policyDocuments/taskRolePolicy.json", mapOf("ecs-task-role-policy" to additionalPermissions), "Actions")
+            val taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
+            val iamPolicy = awsCommunicator.createIamPolicy(correlationId, "$userName-task-role-document", taskRolePolicyString)
+            val iamRole = awsCommunicator.createIamRole(correlationId, "$userName-iam-role", taskAssumeRoleString)
             awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
+            awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId), iamRole)
 
             val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostname, jupyterMemory, jupyterCpu, containerPort)
             val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId,"orchestration-service-user-$userName-td", taskExecutionRoleArn , taskRoleArn, NetworkMode.AWSVPC, containerDefinitions)
@@ -171,23 +169,21 @@ class TaskDeploymentService {
         return pairs.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
     }
 
-    /**
-     * Helper method to initialise the lateinit vars [taskAssumeRoleString] and [taskRolePolicyString] by
-     * converting the associated `@Value` parameters to Strings and replacing `ADDITIONAL_PERMISSIONS` in
-     * [taskRolePolicyString] with the provided [additionalPermissions]
-     *
-     * @return [Pair] of [taskRolePolicyString] to [taskAssumeRoleString] for ease of access.
+    fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String): Policy {
+        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument("policyDocuments/jupyterBucketAccessPolicy.json", parseMap(cognitoGroups, userName), "Resources")
+        return awsCommunicator.createIamPolicy(correlationId, "$userName-jupyter-s3-document", jupyterBucketAccessRolePolicyString)
+    }
+
+    /*
+    *   Helper method to parse environment variables into arn strings and return lists of the values paired
+    *   with the relevant SID of the IAM statement
      */
-    fun parsePolicyDocuments(additionalPermissions: List<String>): Pair<String, String> {
-        var replaceString = ""
-        if (additionalPermissions.isNotEmpty()) {
-            logger.info("Adding permissions to containers", "permissions" to additionalPermissions.joinToString())
-            val permissionsJson = additionalPermissions.joinToString(prefix = "\"", separator = "\",\"", postfix = "\"")
-            replaceString = "$permissionsJson,"
-        }
-        taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
-        taskRolePolicyString = taskRolePolicyDocument.inputStream.bufferedReader().use { it.readText() }
-                .replace("ADDITIONAL_PERMISSIONS", replaceString)
-        return taskRolePolicyString to taskAssumeRoleString
+    fun parseMap (cognitoGroups: List<String>, userName: String): Map<String, List<String>> {
+        val accountNumber = configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER)
+        val jupyterS3Arn = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
+        val folderAccess = cognitoGroups
+                .map{"arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/$it-shared"}
+                .plus(listOf("$jupyterS3Arn/*", "arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/$userName-home"))
+        return mapOf(Pair("jupyter-s3-access-document", folderAccess), Pair("jupyter-s3-list", listOf(jupyterS3Arn)))
     }
 }

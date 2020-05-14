@@ -46,7 +46,7 @@ class ConnectionControllerTest {
         System.setProperty(ConfigKey.ECS_CLUSTER_NAME.key, "test_ecs")
         System.setProperty(ConfigKey.USER_CONTAINER_URL.key, "test_url")
         System.setProperty(ConfigKey.DEBUG.key, "true")
-        val jwtObject = JWTObject(mock<DecodedJWT>(), "test_user")
+        val jwtObject = JWTObject(mock<DecodedJWT>(), "test_user", listOf("group1", "group2"))
         whenever(authService.validate(any())).thenReturn(jwtObject)
     }
 
@@ -103,6 +103,7 @@ class ConnectionControllerTest {
     fun `200 returned from debug deploy with well formed request`() {
         mvc.perform(post("/debug/deploy")
                 .header("Authorisation", "test_user")
+                .header("cognito:groups", "test_cg1", "test_cg2")
                 .header("content-type", "application/json")
                 .content("{\"emrClusterHostName\":\"\"}"))
                 .andExpect(status().isOk)
@@ -112,8 +113,19 @@ class ConnectionControllerTest {
     fun `400 with missing Authorisation from header debug deploy`() {
         mvc.perform(post("/debug/deploy")
                 .content("{}")
+                .header("cognito:groups", "cognito_group")
                 .header("content-type", "application/json"))
                 .andExpect(status().isBadRequest)
                 .andExpect(status().reason("Missing request header 'Authorisation' for method parameter of type String"))
     }
+
+    @Test
+    fun `200 with missing cognito groups from header deployusercontainers`() {
+        mvc.perform(post("/debug/deploy")
+                .content("{}")
+                .header("Authorisation", "test_user")
+                .header("content-type", "application/json"))
+                .andExpect(status().isOk)
+    }
+
 }

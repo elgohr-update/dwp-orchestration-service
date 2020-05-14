@@ -2,16 +2,16 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ecs-task-role-policy",
       "Effect": "Allow",
       "Action": [
-        ADDITIONAL_PERMISSIONS
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:BatchGetImage",
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "*"
+      "Resource": ["*"]
     }
   ]
 }

@@ -80,16 +80,12 @@ module "ecs-fargate-task-definition" {
       value = local.ecr_endpoint
     },
     {
-      name  = "orchestrationService.jupyterhub_bucket"
-      value = module.jupyter_s3_storage.jupyterhub_bucket.id
-    },
-    {
-      name  = "orchestrationService.jupyterhub_kms_arn"
-      value = module.jupyter_s3_storage.jupyterhub_kms.arn
-    },
-    {
       name  = "orchestrationService.jupyterhub_bucket_arn"
       value = module.jupyter_s3_storage.jupyterhub_bucket.arn
+    },
+    {
+      name  = "orchestrationService.aws_account_number"
+      value = local.account[local.environment]
     },
     {
       name  = "PROXY_HOST"

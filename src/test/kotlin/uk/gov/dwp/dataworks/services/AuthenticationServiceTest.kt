@@ -26,10 +26,11 @@ class AuthenticationServiceTest {
     @MockBean
     private lateinit var configurationResolver: ConfigurationResolver
 
-    private val cognitoUserNameOnly= "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJjb2duaXRvOnVzZXJuYW1lIjoiY29nbml0b1VzZXJOYW1lIiwiaXNzIjoiVGVzdElzc3VlciJ9.atgHhs2UIhHq4pngA3q5yZSnTckSfan2LFixG85bnC1KJlZdacTTdJlYlowy63fRru7iyqJkRW1ALFJ8YownLpQn6NW4vLGrwz33PNIyxl0_r-DMQDlN1AENO-Hb46d8bu9S9x9Py6ujgVjhuoXC8_cgJFeMhXQUePhDOVa2nGfPQ85JUuCV4zu8XApDNITmWhfjFMBquJFYvIj51t2h8NlZyDsq3P2H0rjPxWDa3H21a5am_Mkh0qc5bCK8K41mzv77vv1ZPKtqWz1m5rfw65y4mtMDOHWpXczreJsnIaytWdPkgPOREPCVe8AaDHkFyKWyHEQ_-su3qQXmmnUorg"
-    private val cognitoAndNoneCognito= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOnVzZXJuYW1lIjoiY29nbml0b1VzZXJOYW1lIiwidXNlcm5hbWUiOiJ1c2VyTmFtZSIsImlzcyI6IlRlc3RJc3N1ZXIifQ.Yk5KiToUCyJyIZh8V3hi8BuXceq55niEGxaEOfZfqncClDFO8-s_4-d__1wzyMyccr6ONafgKqbLR8qavtNsoy-0Z7MsltaN100FOnQC8JMYXbdTbhCLSmeq41LW9-mTym3jnDtc1dyUOdejY1F7HHmQdvP7TvrqPEhJjfhf1d_0yXLhkKSAdhcO8nRN4HlvB3SKY4DmTR7ZnqVq9ZfJaTKujaBhqsOu59dt_srtZOkN56INVHT69_LfMHOWJwSWtOBI9R4WVgGI3dM8ZvKmfM1DyhsRj3ndPdAYMCKhsHpmTFeRNx2Le20bEH41YW5O0lkP59Yu98DOvRddYnsnFQ"
-    private val noneCognitoOnly= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJOYW1lIiwiaXNzIjoiVGVzdElzc3VlciJ9.YyzwQsAN0dy0F8_YjMZ7Bpupf66R-IGMH0tFwUpIJbsK9i_yDOcmizBmGHq79TFhbuQyJ_-aJ4avuZ4dChVoaqnHLUNazv_dzGuSUEbwjfJIfAHowpv9ppXlyeJLFy4IpngAUMcg0b7E62VTQ7zVYitqAd8-APmtM2wBjq0r1K9ejzTM_658LIsNadG8iYqEy0UKouZqnuhYvWXJZCJF8OShBF_OXELMFZ_roqK7FNbxjA2h9J40QItZZEGEy4FezCZj7H7l1tgm244CyIGhx1h4CD91PXrXe7O3CvKi8y75SdW6qfEzBY5uCR08-Z510R5_nvx-iVhnBi_ydj5kLA"
-    private val noUserName= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJub1VzZXJOYW1lIjoibm9OYW1lIn0.OqJBmVXDYr_TpfagfsfpVL_cK64QEG6K92CLk4GH36RxAGgrpqro5w1EOicGqXCOu6PUZViV5-Xu4QUIuu0lcqPpD-4tybe54z_zHuebKGIcWHifUm2tT5Cfbwvj98Vc_BKtGuKCXiPZQ8tW-T6ELXXJifIfxHB_sypQ5nnmo_GaBUAdP7JkIS-6Dy8OzcwD04pF_O5TOUfwpcnV5aEhfSxPY9TAmfUWVw-xMaGRxtqiolsOKa2iWsg805U2k8R01TkYtTzhfjMD3CvbJpCxoz8JpL9VXcmSP84S1D33kbyygYkyYXrrESnrgDJvGexgtj22PjQbRcXlSkzS7Z1_jw"
+    private val cognitoUserNameOnly= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwiY29nbml0bzp1c2VybmFtZSI6ImNvZ25pdG9Vc2VyTmFtZSIsImlzcyI6IlRlc3RJc3N1ZXIifQ.CpUehrX6RehLxHWm6BiIfFvE6dXATYmXYMuFpRqDevwGVPLS-jsWrafxGYsdcX-KLQxhLsj7i2Ni8dZnoOkNGthkPruiqnWGes93kH4PhKE-ZtZ4VQ8cqve6eVWmxUFr1vLIXQ2gWAEhirQYNLqlxyccFulnFphkPlgLucZ3Zgxcm31MWzSGG7uzyRvVCrklLXEv4aaU7xBAWZSmBReKf1Je3UigCmHbMH4B-jGNA-RWao_pV0PxlA1Swv6jM4V4dPCWJn9nnBSluzfjt7A9McAQktgmpPfMsVgXQksC2AACvZKgt-MFP1bAZLipgzZ54Vmvz65LYkqtIlD2tFNAIg"
+    private val cognitoAndNoneCognito= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwiY29nbml0bzp1c2VybmFtZSI6ImNvZ25pdG9Vc2VyTmFtZSIsInVzZXJuYW1lIjoidXNlck5hbWUiLCJpc3MiOiJUZXN0SXNzdWVyIn0.ScjcTwBPNbpk1eeC_P5OPU-wieucIiTWvyN60B42qU5VpsVUuzBWsyop9OfAcoiPbb7guIetlQUNNdlW9aKtI5sLf_TJMTO9j99FL8TOS6K-REK1jjAjjWvWjyZl-5BvgQ-HuhQwhMoER1F1PfjeXJQSgMPyggnoOLzCm8ijEQlRx-x-FJ9pIFgPu2ySuGeNKHqbymh_YH35FPBm-94-9s4IiuWOHPtxpEHb3RXGjxnZ-CCbqHHtWFiJbTHxeiUOb9ziANP4RMAAmsWRHZ-_5uO5ngHPTapivZsxFqgJDYPzczC5GJ8jU2vUeDfrzYiGO_Ms0S1tciUc2AU9W1k6rQ"
+    private val noneCognitoOnly= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwidXNlcm5hbWUiOiJ1c2VyTmFtZSIsImlzcyI6IlRlc3RJc3N1ZXIifQ.KeP6Wk7Bnt1BAG5Drzit2PsWvIUpIMAl7SCdwvTBoH295kN_K9OaY1pM4An_4b5McnpwHYYrfmr_SCHM_7PNe3VNpv7hhodTHNEzqAQ8PnXxEvaQAQhIpExkpCU_yNqHYoXzbT9ftGnh5uLVKgOjnUXKANMcAxBPjaZ0w2M-SjWJSqSLsI9c04HfF410JK-pyjV6TK1phG3Vfbk0BJ8byXvxSXJITeBlR34RIsXwhZAO3LveU1Kzicrv0M43ZE0d_d1edMv6qkaVt5LsxQTCjsXStj5JFcdtLgb6xpBVN0THOaW2NT9sdxYkdqngI6ZlXdFPHzRO1zAqF15QuvdvSw"
+    private val noUserName= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwibm9Vc2VyTmFtZSI6Im5vTmFtZSJ9.ELIjgAc31MS4ul32KKmTxYSumL1hOnQmfh0z6BEvMdH0Jwi0Ocm79raWqcjQwARmw77EgijqBhU7WYkYh9rQ7yLJfd2CBe8Exuu-cFIyw-xPCS3xlYfUavTIgWHQz_J690-WcFWS1boxMDGp247ciS1tLdHcQ1GpGgTc4XnED14NeN2OvEWvdmnF8o7ZJbq34EjPK_FndXwsT2ldOHAk_gBIFcux0FMOb8dWQCtjimFU9jEgZCRWFLAFQR4lamZzqDvs6xtfSQX_I6aQ5tgcFPzTVs8OEkUPWZNMduyXsRUHbbUoIL7z6dJOnFI60d14vEmHW8vl9iySXg8XDuJ-4A"
+    private val noGroups= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJub0NvZ25pdG86Z3JvdXBzIjpbImNnMSIsImNnMiJdLCJ1c2VybmFtZSI6IlRlc3RVc2VyTmFtZSJ9.m-9P5Ci1V8kacH8_lEKiJ8Ddeo9yowf51KsuEqjqmMOoaMuv-XML1pHpJTgaYnRoDiKNzEAoKIz7Bd5ozemS4vGRr_2Iis94qa_nmM1KVnodkLDOelot5cneMLrSqGy65SBwXYiEjM-RXr13yA5gDRtVrK9hrGVtdnvKTwaSoCpFNHC7vznkTTPXXkI0oRPQ35pwrOfE0ClSfO7GLp3xZfq5S-RBILBHvf4Gd2aE_13SqzIwGJqCW4_9Guzvjnf2f7B1zNcVHdSAYQ78XQPn38WxhKI14_Aus58GHWtL9OyK2r-3_3mZc2rnEN_2cAPpOFyVUd09GiUYwb-YLFygUA"
 
     @BeforeEach
     fun setup() {
@@ -40,27 +41,35 @@ class AuthenticationServiceTest {
     @Test
     fun `Returns cognito username when present`() {
         val decodedJWT = JWT.decode(cognitoUserNameOnly)
-        val cognitoUserName = authenticationService.cognitoUsernameFromJwt(decodedJWT)
+        val cognitoUserName = authenticationService.userNameFromJwt(decodedJWT)
         Assertions.assertThat(cognitoUserName).isEqualTo("cognitoUserName")
     }
     @Test
     fun `Returns cognito username when cognito and none cognito present`() {
         val decodedJWT = JWT.decode(cognitoAndNoneCognito)
-        val cognitoUserName = authenticationService.cognitoUsernameFromJwt(decodedJWT)
+        val cognitoUserName = authenticationService.userNameFromJwt(decodedJWT)
         Assertions.assertThat(cognitoUserName).isEqualTo("cognitoUserName")
     }
     @Test
     fun `Returns non-cognito username when cognito username isnt present`() {
         val decodedJWT = JWT.decode(noneCognitoOnly)
-        val cognitoUserName = authenticationService.cognitoUsernameFromJwt(decodedJWT)
+        val cognitoUserName = authenticationService.userNameFromJwt(decodedJWT)
         Assertions.assertThat(cognitoUserName).isEqualTo("userName")
     }
 
     @Test
     fun `Throws correct error, when no user name present`() {
         val decodedJWT = JWT.decode(noUserName)
-        Assertions.assertThatCode { authenticationService.cognitoUsernameFromJwt(decodedJWT) }
+        Assertions.assertThatCode { authenticationService.userNameFromJwt(decodedJWT) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessage("No username found in JWT token")
+    }
+
+    @Test
+    fun `Throws correct error, when no cognito groups present`() {
+        val decodedJWT = JWT.decode(noGroups)
+        Assertions.assertThatCode { authenticationService.groupsFromJwt(decodedJWT)}
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessage("No cognito groups found in JWT token")
     }
 }

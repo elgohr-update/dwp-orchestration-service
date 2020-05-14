@@ -3,11 +3,16 @@ The service orchestrator for providing remote access into the analytical environ
 
 ###Endpoint ot submit request for user containers 
  Requests using JWT to be submitted as a post request to `/connect`  
+ - The JWT should be sent as a string in the header under the key `Authorisation` 
+ - The JWT should contain:
+    * `cognito:username` or `username` (provided by AWS Cognito)
+    * `cognito:groups` - an array of the groups that the user has access to
  
  Test requests that omit JWT to be submitted as a post request to `/deployusercontainers` 
  
  Header of request must contain the following:
   - `Authorisation`*
+  - `cognito:groups` - can be an empty string
      
   Optional inputs for body of request are:
   - `jupyterCpu`            - default : 512

@@ -2,9 +2,13 @@ package uk.gov.dwp.dataworks
 
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.PropertyNamingStrategy
+import com.fasterxml.jackson.databind.annotation.JsonNaming
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import kotlin.reflect.full.declaredMemberProperties
+
 
 data class DeployRequest @JsonCreator constructor(
         val jupyterCpu: Int = 512,
@@ -12,7 +16,7 @@ data class DeployRequest @JsonCreator constructor(
         val additionalPermissions: List<String> = emptyList()
 )
 
-data class JWTObject(val verifiedJWT: DecodedJWT, val userName: String)
+data class JWTObject(val verifiedJWT: DecodedJWT, val userName: String, val cognitoGroup: List<String>)
 
 data class UserTask(val correlationId: String,
                     val userName: String,
@@ -42,3 +46,17 @@ data class UserTask(val correlationId: String,
         }
     }
 }
+
+@JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
+data class StatementObject(
+        @JsonProperty("Sid") var sid: String,
+        @JsonProperty("Effect") var effect: String,
+        @JsonProperty("Action") var action: MutableList<String>,
+        @JsonProperty("Resource") var resource: MutableList<String>
+)
+
+@JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
+data class AwsIamPolicyJsonObject(
+        @JsonProperty("Version") var version: String,
+        @JsonProperty("Statement") var statement: List<StatementObject>
+)
