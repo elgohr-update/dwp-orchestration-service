@@ -77,7 +77,7 @@ class TaskDeploymentService {
             awsCommunicator.createAlbRoutingRule(correlationId, userName, listener.listenerArn(), targetGroup.targetGroupArn())
 
             //IAM Permissions
-            val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecs-task-role-policy" to additionalPermissions), "Action")
+            val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecstaskrolepolicy" to additionalPermissions), "Action")
             val taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
             val iamPolicy = awsCommunicator.createIamPolicy(correlationId, "$userName-task-role-document", taskRolePolicyString)
             val iamRole = awsCommunicator.createIamRole(correlationId, "$userName-iam-role", taskAssumeRoleString)
@@ -205,6 +205,6 @@ class TaskDeploymentService {
         val folderAccess = cognitoGroups
                 .map{"arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/$it-shared"}
                 .plus(listOf("$jupyterS3Arn/*", "arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/$userName-home"))
-        return mapOf(Pair("jupyter-s3-access-document", folderAccess), Pair("jupyter-s3-list", listOf(jupyterS3Arn)))
+        return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
     }
 }

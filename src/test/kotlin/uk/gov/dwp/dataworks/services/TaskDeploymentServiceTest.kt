@@ -43,6 +43,6 @@ class TaskDeploymentServiceTest {
     fun `Can work through debug endpoint without cognitoGroups`(){
         val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser")
         assertThat(emptyCognitoGroup)
-                .isEqualTo(mapOf(Pair("jupyter-s3-access-document", listOf("testArn/*", "arn:aws:kms:eu-west-2:1234:alias/testUser-home")), Pair("jupyter-s3-list", listOf("testArn"))))
+                .isEqualTo(mapOf(Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:eu-west-2:1234:alias/testUser-home")), Pair("jupyters3list", listOf("testArn"))))
     }
 }

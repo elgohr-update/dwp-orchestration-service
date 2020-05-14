@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "jupyter-s3-access-document",
+      "Sid": "jupyters3accessdocument",
       "Effect": "Allow",
       "Action": [
         "s3:PutObject",
@@ -18,9 +18,11 @@
       "Resource": []
     },
     {
-      "Sid": "jupyter-s3-list",
+      "Sid": "jupyters3list",
       "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
+      "Action": [
+        "s3:ListBucket"
+      ],
       "Resource": []
     }
   ]
