@@ -77,7 +77,7 @@ class TaskDeploymentService {
             awsCommunicator.createAlbRoutingRule(correlationId, userName, listener.listenerArn(), targetGroup.targetGroupArn())
 
             //IAM Permissions
-            val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecs-task-role-policy" to additionalPermissions), "Actions")
+            val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecs-task-role-policy" to additionalPermissions), "Action")
             val taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
             val iamPolicy = awsCommunicator.createIamPolicy(correlationId, "$userName-task-role-document", taskRolePolicyString)
             val iamRole = awsCommunicator.createIamRole(correlationId, "$userName-iam-role", taskAssumeRoleString)
@@ -191,7 +191,7 @@ class TaskDeploymentService {
     }
 
     fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String): Policy {
-        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, parseMap(cognitoGroups, userName), "Resources")
+        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, parseMap(cognitoGroups, userName), "Resource")
         return awsCommunicator.createIamPolicy(correlationId, "$userName-jupyter-s3-document", jupyterBucketAccessRolePolicyString)
     }
 
