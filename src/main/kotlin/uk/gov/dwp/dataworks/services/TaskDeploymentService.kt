@@ -124,14 +124,14 @@ class TaskDeploymentService {
                                 "--noerrdialogs",
                                 "--disable-translate",
                                 "--no-first-run",
-                                "--fast",
-                                "--fast-start",
                                 "--disable-infobars",
                                 "--disable-features=TranslateUI",
                                 "--disk-cache-dir=/dev/null",
                                 "--test-type https://localhost:8000",
                                 "--kiosk",
                                 "--ignore-certificate-errors",
+                                "--enable-auto-reload",
+                                "--connectivity-check-url=https://localhost:8000",
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")))
                 .build()
