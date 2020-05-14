@@ -112,6 +112,10 @@ module "ecs-fargate-task-definition" {
         "elasticloadbalancing.${var.region}.amazonaws.com",
         "ecs.${var.region}.amazonaws.com"
       ])
+    },
+    {
+      name  = "orchestrationService.container_log_group"
+      value = module.ecs-user-host.outputs.user_container_log_group
     }
   ]
 }
