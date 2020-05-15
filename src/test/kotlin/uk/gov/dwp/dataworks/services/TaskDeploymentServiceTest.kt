@@ -41,7 +41,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Can work through debug endpoint without cognitoGroups`(){
-        val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser")
+        val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser", configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER))
         assertThat(emptyCognitoGroup)
                 .isEqualTo(mapOf(Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:eu-west-2:1234:alias/testUser-home")), Pair("jupyters3list", listOf("testArn"))))
     }

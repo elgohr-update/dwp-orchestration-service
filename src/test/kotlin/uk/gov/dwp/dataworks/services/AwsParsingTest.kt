@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
+import org.mockito.InjectMocks
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
@@ -32,8 +33,11 @@ class AwsParsingTest {
     @Autowired
     private lateinit var awsParsing: AwsParsing
 
-    @Autowired
+    @InjectMocks
     private lateinit var configurationResolver: ConfigurationResolver
+
+    @MockBean
+    private lateinit var taskDeploymentService: TaskDeploymentService
 
     @Autowired
     private lateinit var authService: AuthenticationService
@@ -50,11 +54,11 @@ class AwsParsingTest {
     fun `Reads policy documents from correctly`() {
         val taskRolePolicy = taskRoleDocument.inputStream.bufferedReader()
         assertThat(taskRolePolicy).isNotNull
-        assertThat(taskRolePolicy.use { it.readText() }).contains(" \"Sid\": \"ecstaskrolepolicy\",\n")
+        assertThat(taskRolePolicy.use { it.readText() }).contains(" \"Sid\": \"ecstaskrolepolicy\",")
 
         val jupyterBucketAccessPolicy = jupyterBucketAccessDocument.inputStream.bufferedReader()
         assertThat(jupyterBucketAccessPolicy).isNotNull
-        assertThat(jupyterBucketAccessPolicy.use { it.readText() }).contains("\"Sid\": \"jupyters3accessdocument\",\n")
+        assertThat(jupyterBucketAccessPolicy.use { it.readText() }).contains("\"Sid\": \"jupyters3accessdocument\",")
     }
 
     @Test
