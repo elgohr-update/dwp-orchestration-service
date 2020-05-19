@@ -353,7 +353,7 @@ class AwsCommunicator {
      * Creates an IAM [Policy] from the name and document provided. [policyDocument] should be in JSON format
      * as per the AWS standards for documents.
      */
-    fun createIamPolicy(correlationId: String, userName: String, policyDocument: String): Policy {
+    fun createIamPolicy(correlationId: String, userName: String, policyDocument: String, dynamoAttribute: String): Policy {
         val policyName = "orchestration-service-user-$userName-policy"
         val policy = awsClients.iamClient.createPolicy(
                 CreatePolicyRequest.builder()
@@ -367,7 +367,7 @@ class AwsCommunicator {
                 "policy_name" to policy.policyName(),
                 "policy_id" to policy.policyId(),
                 "created_date" to policy.createDate().toString())
-        updateDynamoDeploymentEntry(userName, "iamPolicyArn" to policy.arn())
+        updateDynamoDeploymentEntry(userName, dynamoAttribute to policy.arn())
         return policy
     }
 

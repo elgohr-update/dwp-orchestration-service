@@ -47,7 +47,7 @@ class TaskDestroyServiceTest {
 
     @Test
     fun `Does not remove entry from DynamoDB when one deletion fails`() {
-        val testUserTask = UserTask("correlation","username", "tgArn", "albArn", "ecsCN", "ecsSN", "iamRN", "iamPArn")
+        val testUserTask = UserTask("correlation","username", "tgArn", "albArn", "ecsCN", "ecsSN", "iamRN", "iamPArn", "iamTArn")
         doReturn(testUserTask).whenever(activeUserTasks).get(any())
         doAnswer { throw Exception("fail") }.whenever(awsCommunicator).deleteTargetGroup(any(), any())
 
@@ -59,7 +59,7 @@ class TaskDestroyServiceTest {
 
     @Test
     fun `Does not remove entry from DynamoDB when multiple deletions fail`() {
-        val testUserTask = UserTask("correlation","username", "tgArn", null, "ecsCN", "ecsSN", "iamRN", "iamPArn")
+        val testUserTask = UserTask("correlation","username", "tgArn", null, "ecsCN", "ecsSN", "iamRN", "iamPArn", "iamTArn")
         doReturn(testUserTask).whenever(activeUserTasks).get(any())
         doAnswer { throw Exception("fail") }.whenever(awsCommunicator).deleteTargetGroup(any(), any())
         doAnswer { throw Exception("fail") }.whenever(awsCommunicator).deleteAlbRoutingRule(any(), any())
@@ -73,7 +73,7 @@ class TaskDestroyServiceTest {
 
     @Test
     fun `Removes entry from DynamoDB when no deletions fail`() {
-        val testUserTask = UserTask("correlation","username", "tgArn", "albArn", "ecsCN", "ecsSN", "iamRN", "iamPArn")
+        val testUserTask = UserTask("correlation","username", "tgArn", "albArn", "ecsCN", "ecsSN", "iamRN", "iamPArn", "iamTArn")
         doReturn(testUserTask).whenever(activeUserTasks).get(any())
 
         taskDestroyService.destroyServices("username")

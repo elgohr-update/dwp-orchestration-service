@@ -36,10 +36,14 @@ class TaskDestroyService {
                 { awsCommunicator.deleteTargetGroup(userTasks.correlationId, userTasks.targetGroupArn!!) },
             tryDeleteResource("ecs_service", userTasks.ecsClusterName, userTasks.ecsServiceName)
                 { awsCommunicator.deleteEcsService(userTasks.correlationId, userTasks.ecsClusterName!!, userTasks.ecsServiceName!!) },
-            tryDeleteResource("detach_iam_policy", userTasks.iamRoleName, userTasks.iamPolicyArn)
-                { awsCommunicator.detachIamPolicyFromRole(userTasks.correlationId, userTasks.iamRoleName!!, userTasks.iamPolicyArn!!) },
-            tryDeleteResource("iam_policy", userTasks.iamPolicyArn)
-                { awsCommunicator.deleteIamPolicy(userTasks.correlationId, userTasks.iamPolicyArn!!) },
+            tryDeleteResource("detach_iam_policy", userTasks.iamRoleName, userTasks.iamPolicyUserArn)
+                { awsCommunicator.detachIamPolicyFromRole(userTasks.correlationId, userTasks.iamRoleName!!, userTasks.iamPolicyUserArn!!) },
+            tryDeleteResource("iam_policy", userTasks.iamPolicyUserArn)
+                { awsCommunicator.deleteIamPolicy(userTasks.correlationId, userTasks.iamPolicyUserArn!!) },
+            tryDeleteResource("detach_iam_policy", userTasks.iamRoleName, userTasks.iamPolicyTaskArn)
+                { awsCommunicator.detachIamPolicyFromRole(userTasks.correlationId, userTasks.iamRoleName!!, userTasks.iamPolicyTaskArn!!) },
+            tryDeleteResource("iam_policy", userTasks.iamPolicyTaskArn)
+                { awsCommunicator.deleteIamPolicy(userTasks.correlationId, userTasks.iamPolicyTaskArn!!) },
             tryDeleteResource("iam_role", userTasks.iamRoleName)
                 { awsCommunicator.deleteIamRole(userTasks.correlationId, userTasks.iamRoleName!!) }
         )
