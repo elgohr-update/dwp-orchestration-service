@@ -112,7 +112,7 @@ class TaskDeploymentService {
         return logConfig
     }
 
-    private fun buildContainerDefinitions(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, guacamolePort: Int, jupyterS3Bucket: String, KMS_HOME: String, KMS_SHARED: String): Collection<ContainerDefinition> {
+    private fun buildContainerDefinitions(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, guacamolePort: Int, jupyterS3Bucket: String, kmsHome: String, kmsShared: String): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
         
@@ -123,7 +123,7 @@ class TaskDeploymentService {
                 .memory(jupyterMemory)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
-                .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to KMS_HOME, "KMS_SHARED" to KMS_SHARED))
+                .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared))
                 .logConfiguration(buildLogConfiguration(userName, "jupyterHub"))
                 .build()
 
@@ -204,8 +204,8 @@ class TaskDeploymentService {
     fun parseMap (cognitoGroups: List<String>, userName: String, accountId: String): Map<String, List<String>> {
         val jupyterS3Arn = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
         val folderAccess = cognitoGroups
-                .map{"arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$it-shared"}
-                .plus(listOf("$jupyterS3Arn/*", "arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$userName-home"))
+                .map{awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$it-shared")}
+                .plus(listOf("$jupyterS3Arn/*", awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$userName-home")))
         return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
     }
 }

@@ -23,7 +23,6 @@ import uk.gov.dwp.dataworks.Application
 import uk.gov.dwp.dataworks.JWTObject
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.aws.AwsParsing
-import java.lang.module.ModuleDescriptor.read
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class])

@@ -43,6 +43,7 @@ data "aws_iam_policy_document" "task_role" {
       "iam:DeletePolicy",
       "iam:DeleteRole",
       "iam:PassRole",
+      "kms:DescribeKey",
     ]
 
     resources = [

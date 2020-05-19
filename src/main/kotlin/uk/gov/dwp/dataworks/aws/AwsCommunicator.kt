@@ -59,6 +59,7 @@ import software.amazon.awssdk.services.iam.model.DetachRolePolicyRequest
 import software.amazon.awssdk.services.iam.model.NoSuchEntityException
 import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
+import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
 import uk.gov.dwp.dataworks.MultipleLoadBalancersMatchedException
 import uk.gov.dwp.dataworks.NetworkConfigurationMissingException
@@ -526,5 +527,14 @@ class AwsCommunicator {
         logger.info("User tasks deregistered in dynamodb",
                 "correlation_id" to correlationId,
                 "user_name" to primaryKeyValue)
+    }
+
+    /**
+     * Gets the ARN of the key aliased by [keyAlias]
+     */
+    fun getKmsKeyArn(keyAlias: String): String {
+        return awsClients.kmsClient
+                .describeKey(DescribeKeyRequest.builder().keyId(keyAlias).build())
+                .keyMetadata().arn()
     }
 }
