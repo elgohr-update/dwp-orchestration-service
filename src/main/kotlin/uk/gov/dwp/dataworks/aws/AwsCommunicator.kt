@@ -354,7 +354,7 @@ class AwsCommunicator {
      * as per the AWS standards for documents.
      */
     fun createIamPolicy(correlationId: String, userName: String, policyDocument: String, dynamoAttribute: String): Policy {
-        val policyName = "orchestration-service-user-$userName-policy"
+        val policyName = "analytical-$userName-$dynamoAttribute"
         val policy = awsClients.iamClient.createPolicy(
                 CreatePolicyRequest.builder()
                         .policyDocument(policyDocument)
