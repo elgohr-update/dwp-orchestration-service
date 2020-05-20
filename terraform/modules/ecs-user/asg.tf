@@ -1,10 +1,8 @@
 resource "aws_autoscaling_group" "user_host" {
-  depends_on            = [aws_ecs_cluster.user_host]
   name                  = "${var.name_prefix}-asg"
   max_size              = var.auto_scaling.max_size
   min_size              = var.auto_scaling.min_size
   max_instance_lifetime = var.auto_scaling.max_instance_lifetime
-  protect_from_scale_in = true
 
   vpc_zone_identifier = var.vpc.aws_subnets_private[*].id
 
