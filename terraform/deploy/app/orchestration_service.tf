@@ -29,7 +29,7 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.load_balancer_name"
-      value = data.terraform_remote_state.frontend-service.outputs.fe_service.lb.name
+      value = "lb-name"
     },
     {
       name  = "orchestrationService.load_balancer_port"
@@ -49,11 +49,11 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.emr_cluster_hostname"
-      value = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname
+      value = "data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname"
     },
     {
       name  = "orchestrationService.user_container_url"
-      value = data.terraform_remote_state.frontend-service.outputs.fe_service.fqdn
+      value = "example.com"
     },
     {
       name  = "orchestrationService.user_container_port"
@@ -173,7 +173,7 @@ module "ecs-user-host" {
   common_tags        = merge(local.common_tags, { Name = "${var.name_prefix}-user-host" })
   instance_type      = "t3.2xlarge"
   name_prefix        = "${var.name_prefix}-user-host"
-  frontend_alb_sg_id = data.terraform_remote_state.frontend-service.outputs.fe_service.lb_sg.id
+  frontend_alb_sg_id = "test"
   guacamole_port     = local.guacamole_port
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
