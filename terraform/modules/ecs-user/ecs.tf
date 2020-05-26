@@ -25,4 +25,5 @@ resource "aws_ecs_capacity_provider" "user_host" {
     }
 
   }
+  depends_on = [aws_autoscaling_group.user_host]
 }
