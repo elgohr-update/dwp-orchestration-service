@@ -62,3 +62,23 @@ resource "aws_security_group_rule" "egress_lb_to_host" {
   source_security_group_id = aws_security_group.user_host.id
   type                     = "egress"
 }
+
+resource "aws_security_group_rule" "egress_host_to_emr_livy" {
+  description              = "Allow host TCP to EMR Livy"
+  protocol                 = "tcp"
+  from_port                = var.livy_port
+  to_port                  = var.livy_port
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.emr_sg_id
+  type                     = "egress"
+}
+
+resource "aws_security_group_rule" "ingress_emr_livy_from_host" {
+  description              = "Allow host TCP to EMR Livy"
+  protocol                 = "tcp"
+  from_port                = var.livy_port
+  to_port                  = var.livy_port
+  security_group_id        = var.emr_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "ingress"
+}

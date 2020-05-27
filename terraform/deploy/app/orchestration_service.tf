@@ -49,7 +49,7 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.emr_cluster_hostname"
-      value = "data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname"
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname
     },
     {
       name  = "orchestrationService.user_container_url"
@@ -175,6 +175,8 @@ module "ecs-user-host" {
   name_prefix        = "${var.name_prefix}-user-host"
   frontend_alb_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.alb_sg.id
   guacamole_port     = local.guacamole_port
+  emr_sg_id          = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_sg_id
+
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private

@@ -25,8 +25,23 @@ data "terraform_remote_state" "analytical_service_infra" {
   }
 }
 
-data "terraform_remote_state" "aws_analytical_env_cognito" {
+data "terraform_remote_state" "aws_analytical_env_app" {
   backend = "s3"
+  workspace = terraform.workspace
+
+  config = {
+    bucket         = "{{state_file_bucket}}"
+    key            = "terraform/dataworks/aws-analytical-environment-app.tfstate"
+    region         = "{{state_file_region}}"
+    encrypt        = true
+    kms_key_id     = "arn:aws:kms:{{state_file_region}}:{{state_file_account}}:key/{{state_file_kms_key}}"
+    dynamodb_table = "remote_state_locks"
+  }
+}
+
+data "terraform_remote_state" "aws_analytical_env_cognito" {
+  backend   = "s3"
+	workspace = local.management_workspace[local.management_account[local.environment]]
 
   config = {
     bucket         = "{{state_file_bucket}}"
@@ -54,7 +69,7 @@ data "terraform_remote_state" "aws_analytical_env_infra" {
 }
 
 data "terraform_remote_state" "aws_certificate_authority" {
-  backend = "s3"
+  backend   = "s3"
   workspace = terraform.workspace
 
   config = {
@@ -68,7 +83,8 @@ data "terraform_remote_state" "aws_certificate_authority" {
 }
 
 data "terraform_remote_state" "security-tools" {
-  backend = "s3"
+  backend   = "s3"
+  workspace = local.management_workspace[local.management_account[local.environment]]
 
   config = {
     bucket         = "{{state_file_bucket}}"

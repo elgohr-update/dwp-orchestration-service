@@ -42,3 +42,14 @@ variable guacamole_port {
   type        = number
   description = "Port used for listening by the user guacamole container"
 }
+
+variable livy_port {
+  type        = number
+  description = "Port that EMR livy listens on"
+  default     = 8998
+}
+
+variable emr_sg_id {
+  type        = string
+  description = "Security Group id of EMR cluster"
+}
