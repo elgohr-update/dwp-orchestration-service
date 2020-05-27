@@ -8,7 +8,7 @@ cd ${APP_HOME}
 
 keytool -genkey \
         -keystore ${APP_HOME}/orchestration-service.keystore \
-        -keyalg RSA -keysize 4096 -validity 3650 -alias orchestration-service \
+        -keyalg RSA -keysize 4096 -validity 30 -alias orchestration-service \
         -dname "cn=orchestration-service, ou=orchestration-service, o=orchestration-service, c=orchestration-service" \
         -storepass changeit -keypass changeit
 
