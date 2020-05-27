@@ -69,10 +69,11 @@ class AwsParsingTest {
 
     @Test
     fun `Multiple additional attributes are replaced appropriately`() {
-        val taskRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, mapOf("jupyters3list" to listOf("permissionOne", "permissionTwo"), "jupyters3accessdocument" to listOf("permissionThree", "permissionFour")), "Resource")
+        val taskRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, mapOf("jupyterkmsaccessdocument" to listOf("permissionOne", "permissionTwo"), "jupyters3list" to listOf("permissionThree", "permissionFour"), "jupyters3accessdocument" to listOf("permissionFive", "permissionSix")), "Resource")
         assertThat(taskRolePolicyString).doesNotContain("[]")
         assertThat(taskRolePolicyString).contains("\"permissionOne\",\"permissionTwo\"")
         assertThat(taskRolePolicyString).contains("\"permissionThree\",\"permissionFour\"")
+        assertThat(taskRolePolicyString).contains("\"permissionFive\",\"permissionSix\"")
     }
 
     @Test

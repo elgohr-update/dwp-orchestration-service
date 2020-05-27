@@ -56,13 +56,17 @@ class TaskDeploymentServiceTest {
     fun `Can work through debug endpoint without cognitoGroups`() {
         val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser", configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER))
         assertThat(emptyCognitoGroup)
-                .isEqualTo(mapOf(Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home")), Pair("jupyters3list", listOf("testArn"))))
+                .isEqualTo(mapOf(Pair("jupyterkmsaccessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home")), Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home")), Pair("jupyters3list", listOf("testArn"))))
     }
 
     @Test
     fun `Creates correct IAM policy for user`() {
         val returnedIamPolicy = taskDeploymentService.parseMap(listOf("testGroup"), "testUsername", "000")
         assertThat(returnedIamPolicy).isEqualTo(mapOf(
+                "jupyterkmsaccessdocument" to listOf(
+                        "arn:aws:kms:eu-west-2:000:key/testkeyarn-testGroup-shared",
+                        "testArn/*",
+                        "arn:aws:kms:eu-west-2:000:key/testkeyarn-testUsername-home"),
                 "jupyters3accessdocument" to listOf(
                         "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testGroup-shared",
                         "testArn/*",

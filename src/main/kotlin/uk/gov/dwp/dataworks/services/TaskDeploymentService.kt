@@ -206,6 +206,6 @@ class TaskDeploymentService {
         val folderAccess = cognitoGroups
                 .map{awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$it-shared")}
                 .plus(listOf("$jupyterS3Arn/*", awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$userName-home")))
-        return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
+        return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyterkmsaccessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
     }
 }
