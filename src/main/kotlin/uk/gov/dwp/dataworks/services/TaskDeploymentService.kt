@@ -129,12 +129,12 @@ class TaskDeploymentService {
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")
                 .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
-                .cpu(256)
-                .memory(256)
+                .cpu(512)
+                .memory(1024)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
                 .environment(pairsToKeyValuePairs(
-                        "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -shared -permitfiletransfer -tightfilexfer -noclipboard -nosetclipboard",
+                        "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -noclipboard -nosetclipboard",
                         "CHROME_OPTS" to arrayOf(
                                 "--no-sandbox",
                                 "--window-position=0,0",
@@ -159,7 +159,7 @@ class TaskDeploymentService {
         val guacd = ContainerDefinition.builder()
                 .name("guacd")
                 .image("$ecrEndpoint/aws-analytical-env/guacd")
-                .cpu(128)
+                .cpu(64)
                 .memory(128)
                 .essential(true)
                 .portMappings(PortMapping.builder().hostPort(4822).containerPort(4822).build())
@@ -170,7 +170,7 @@ class TaskDeploymentService {
                 .name("guacamole")
                 .image("$ecrEndpoint/aws-analytical-env/guacamole")
                 .cpu(256)
-                .memory(256)
+                .memory(512)
                 .essential(true)
                 .environment(pairsToKeyValuePairs(
                         "GUACD_HOSTNAME" to "localhost",
