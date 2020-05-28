@@ -43,6 +43,11 @@ variable guacamole_port {
   description = "Port used for listening by the user guacamole container"
 }
 
+variable management_account {
+  type        = string
+  description = "(Required) - The mgmt account where images reside"
+}
+
 variable livy_port {
   type        = number
   description = "Port that EMR livy listens on"

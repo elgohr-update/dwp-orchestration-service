@@ -6,7 +6,7 @@ resource "aws_s3_bucket" "jupyter_storage" {
   bucket = random_id.jupyter_bucket.hex
   acl    = "private"
 
-  tags = var.common_tags
+  tags = merge(var.common_tags, { Name = "OSJupyterUserStorage", "ProtectSensitiveData" = "True" })
 
   versioning {
     enabled = true
@@ -31,7 +31,8 @@ resource "aws_s3_bucket" "jupyter_storage" {
 }
 
 resource "aws_s3_bucket_public_access_block" "jupyter_bucket" {
-  bucket = aws_s3_bucket.jupyter_storage.id
+  depends_on = [aws_s3_bucket.jupyter_storage]
+  bucket     = aws_s3_bucket.jupyter_storage.id
 
   block_public_acls       = true
   block_public_policy     = true

@@ -33,16 +33,6 @@ resource "aws_security_group_rule" "https_to_s3" {
   type              = "egress"
 }
 
-resource "aws_security_group_rule" "http_to_s3" {
-  description       = "Allow HTTP to S3 endpoint"
-  protocol          = "tcp"
-  from_port         = 80
-  to_port           = 80
-  security_group_id = aws_security_group.user_host.id
-  prefix_list_ids   = [var.vpc.s3_prefix_list_id]
-  type              = "egress"
-}
-
 resource "aws_security_group_rule" "source_fe" {
   description              = "Allow HTTPS from Frontend LB"
   protocol                 = "tcp"

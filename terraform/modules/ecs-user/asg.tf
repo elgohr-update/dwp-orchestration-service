@@ -79,7 +79,7 @@ resource "aws_launch_template" "user_host" {
 
   tag_specifications {
     resource_type = "instance"
-    tags          = merge(var.common_tags, { Name = var.name_prefix, "SSMEnabled" = "True" })
+    tags          = merge(var.common_tags, { Name = var.name_prefix, "SSMEnabled" = "True", "Persistence" = "True" })
   }
 
   tag_specifications {

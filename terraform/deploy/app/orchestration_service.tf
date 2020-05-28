@@ -64,10 +64,6 @@ module "ecs-fargate-task-definition" {
       value = module.user-task-definition.iam_roles.task_execution_role.arn
     },
     {
-      name  = "orchestrationService.user_task_role_arn"
-      value = module.user-task-definition.iam_roles.task_role.arn
-    },
-    {
       name  = "orchestrationService.user_task_security_groups"
       value = module.ecs-user-host.outputs.security_group_id
     },
@@ -176,7 +172,7 @@ module "ecs-user-host" {
   frontend_alb_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.alb_sg.id
   guacamole_port     = local.guacamole_port
   emr_sg_id          = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_sg_id
-
+  management_account = local.account[local.management_account[local.environment]]
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private

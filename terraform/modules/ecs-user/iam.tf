@@ -25,7 +25,6 @@ resource "aws_iam_role_policy_attachment" "ecs" {
   role       = aws_iam_role.user_host.id
 }
 
-// TODO: replace with custom policy due to too open AWS policy
 resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
   role       = aws_iam_role.user_host.id
@@ -52,7 +51,7 @@ data "aws_iam_policy_document" "ecr" {
       "ecr:BatchCheckLayerAvailability"
     ]
 
-    resources = ["arn:aws:ecr:*:*:repository/orchestration-service/*"]
+    resources = ["arn:aws:ecr:${data.aws_region.current.name}:${var.management_account}:repository/orchestration-service/*"]
   }
 
 }
