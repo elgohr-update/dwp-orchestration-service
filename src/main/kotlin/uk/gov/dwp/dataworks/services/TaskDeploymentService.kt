@@ -179,7 +179,7 @@ class TaskDeploymentService {
                         "VALIDATE_ISSUER" to "true",
                         "ISSUER" to authService.issuerUrl,
                         "CLIENT_PARAMS" to "hostname=localhost,port=5900,disable-copy=true",
-                        "CLIENT_USERNAME" to userName))
+                        "CLIENT_USERNAME" to userName.substring(0, userName.length - 3)))
                 .portMappings(PortMapping.builder().hostPort(guacamolePort).containerPort(guacamolePort).build())
                 .logConfiguration(buildLogConfiguration(userName, "guacamole"))
                 .build()
