@@ -66,7 +66,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     USER_CONTAINER_PORT("orchestrationService.user_container_port", false),
     JUPYTER_S3_ARN("orchestrationService.jupyterhub_bucket_arn", false),
     USER_TASK_EXECUTION_ROLE_ARN("orchestrationService.user_task_execution_role_arn", false),
-    USER_TASK_ROLE_ARN("orchestrationService.user_task_role_arn", false),
     USER_TASK_VPC_SECURITY_GROUPS("orchestrationService.user_task_security_groups", true),
     USER_TASK_VPC_SUBNETS("orchestrationService.user_task_subnets", true),
     ECR_ENDPOINT("orchestrationService.ecr_endpoint", false),
