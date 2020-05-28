@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import uk.gov.dwp.dataworks.JWTObject
 import uk.gov.dwp.dataworks.services.ActiveUserTasks
@@ -89,6 +90,7 @@ class ConnectionControllerTest {
                 .header("content-type", "application/json")
                 .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)
+                .andExpect(content().string("test_url/test_user/"))
         mvc.perform(post("/disconnect")
                 .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)

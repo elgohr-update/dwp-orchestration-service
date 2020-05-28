@@ -72,7 +72,16 @@ class AuthenticationService {
         val username = jwt.getClaim("cognito:username").asString()
                 ?: jwt.getClaim("username").asString()
                 ?: throw IllegalArgumentException("No username found in JWT token")
-        return username
+
+        val sub = jwt.getClaim("sub").asString()
+
+        val suffix = sub.subSequence(0,3)
+        // Try and differentiate same usernames by adding
+        // parts of the sub. (can't use full sub since
+        // TargetGroupNames, IAMRoleNames etc are limited to
+        // 32 chars (which is the size of sub!).
+
+        return username + suffix
     }
 
     /**
