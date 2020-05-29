@@ -143,7 +143,7 @@ module "ecs-fargate-service" {
   dynamodb_prefixlist_id    = data.terraform_remote_state.analytical_service_infra.outputs.dynamodb_prefix_list_id
   common_tags               = local.common_tags
   parent_domain_name        = local.parent_domain_name[local.environment]
-  root_dns_prefix           = local.root_dns_prefix[local.environment]
+  root_dns_suffix           = local.root_dns_name[local.environment]
   cert_authority_arn        = data.terraform_remote_state.aws_certificate_authority.outputs.root_ca.arn
   internet_proxy_vpce_sg_id = data.terraform_remote_state.analytical_service_infra.outputs.vpc.internet_proxy_vpce.sg_id
 }

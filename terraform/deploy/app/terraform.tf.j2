@@ -118,6 +118,14 @@ locals {
     production  = "" # no prefix in prod
   }
 
+  root_dns_name = {
+    development = "dev.wip.{{dataworks_domain_name}}"
+    qa          = "qa.wip.{{dataworks_domain_name}}"
+    integration = "int.wip.{{dataworks_domain_name}}"
+    preprod     = "pre.{{dataworks_domain_name}}"
+    production  = "{{dataworks_domain_name}}"
+  }
+
   parent_domain_name = {
     development = "wip.{{dataworks_domain_name}}"
     qa          = "wip.{{dataworks_domain_name}}"

@@ -160,7 +160,7 @@ variable "instance_max_count" {
   default     = 2
 }
 
-variable "root_dns_prefix" {
+variable "root_dns_suffix" {
   type        = string
   description = "(Required) Zone to create DNS record in"
 }
