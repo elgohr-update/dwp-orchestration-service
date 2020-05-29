@@ -1,0 +1,23 @@
+jobs:
+- name: production
+  plan:
+  - get: orchestration-service
+    trigger: true
+    passed:
+      - preprod
+  - .: (( inject meta.plan.terraform-bootstrap ))
+    params:
+      DEPLOY_PATH: app
+  - .: (( inject meta.plan.terraform-apply ))
+    config:
+      run:
+        dir: 'orchestration-service/terraform/deploy/app'
+    params:
+      TF_WORKSPACE: production
+  - .: (( inject meta.plan.terraform-plan ))
+    config:
+      run:
+        dir: 'orchestration-service/terraform/deploy/app'
+    params:
+      TF_WORKSPACE: production
+

@@ -84,7 +84,7 @@ data "terraform_remote_state" "aws_certificate_authority" {
 
 data "terraform_remote_state" "security-tools" {
   backend   = "s3"
-  workspace = local.management_workspace[local.management_account[local.environment]]
+  workspace = terraform.workspace
 
   config = {
     bucket         = "{{state_file_bucket}}"
