@@ -75,4 +75,10 @@ class TaskDestroyService {
             false
         }
     }
+
+    fun cleanupDestroy(activeUsers: Pair<String, List<String>>){
+        activeUsers.second.forEach { user ->
+            destroyServices(user)
+        }
+    }
 }

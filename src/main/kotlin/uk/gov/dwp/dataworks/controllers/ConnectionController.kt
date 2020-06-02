@@ -93,6 +93,12 @@ class ConnectionController {
         taskDestroyService.destroyServices(jwtObject.userName)
     }
 
+    @PostMapping("/cleanup")
+    @ResponseStatus(HttpStatus.OK)
+    fun cleanup(@RequestBody activeUsers: Pair<String, List<String>>) {
+        taskDestroyService.cleanupDestroy(activeUsers)
+    }
+
     @ExceptionHandler(JWTVerificationException::class, SigningKeyNotFoundException::class)
     fun handleInvalidToken(res: HttpServletResponse, ex: Exception) {
         logger.warn("Failed to verify JWT token $ex")
