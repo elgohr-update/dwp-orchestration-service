@@ -25,7 +25,7 @@ module "ecs-fargate-task-definition" {
   environment = [
     {
       name  = "orchestrationService.debug"
-      value = "true"
+      value = local.environment == "development" ? "true" : "false"
     },
     {
       name  = "orchestrationService.load_balancer_name"
