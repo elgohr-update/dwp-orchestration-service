@@ -24,3 +24,13 @@ resource aws_security_group_rule egress_from_cleanup_lambda {
   type                     = "egress"
   source_security_group_id = var.alb_sg
 }
+
+resource aws_security_group_rule egress_from_cleanup_lambda_to_vpce {
+  description              = "egress_from_cleanup_lambda_to_vpce"
+  from_port                = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cleanup_lambda_sg.id
+  to_port                  = 443
+  type                     = "egress"
+  source_security_group_id = var.interface_vpce_sg_id
+}

@@ -42,3 +42,8 @@ variable "vpc_id" {
   type        = string
   description = "(Required) The VPC ID"
 }
+
+variable "interface_vpce_sg_id" {
+  type        = string
+  description = "(Required) The VPC Endpoint Security group ID"
+}

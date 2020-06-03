@@ -11,6 +11,7 @@ resource "aws_lambda_function" "cleanup_lambda" {
   vpc_config {
     subnet_ids         = var.aws_subnets_private
     security_group_ids = [aws_security_group.cleanup_lambda_sg.id]
+    vpc_id             = var.vpc_id
   }
 
   environment {
