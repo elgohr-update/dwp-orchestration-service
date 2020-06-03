@@ -47,3 +47,8 @@ variable "interface_vpce_sg_id" {
   type        = string
   description = "(Required) The VPC Endpoint Security group ID"
 }
+
+variable "dynamodb_prefixlist_id" {
+  type        = string
+  description = "(Required) The DynamoDB Prefix Lists"
+}

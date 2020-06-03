@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.HttpClientErrorException
+import uk.gov.dwp.dataworks.CleanupRequest
 import uk.gov.dwp.dataworks.DeployRequest
 import uk.gov.dwp.dataworks.ForbiddenException
 import uk.gov.dwp.dataworks.logging.DataworksLogger
@@ -95,8 +96,8 @@ class ConnectionController {
 
     @PostMapping("/cleanup")
     @ResponseStatus(HttpStatus.OK)
-    fun cleanup(@RequestBody activeUsers: Pair<String, List<String>>) {
-        taskDestroyService.cleanupDestroy(activeUsers)
+    fun cleanup(@RequestBody request: CleanupRequest) {
+        taskDestroyService.cleanupDestroy(request.activeUsers)
     }
 
     @ExceptionHandler(JWTVerificationException::class, SigningKeyNotFoundException::class)

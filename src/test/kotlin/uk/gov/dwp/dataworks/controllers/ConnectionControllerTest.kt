@@ -130,4 +130,11 @@ class ConnectionControllerTest {
                 .andExpect(status().isOk)
     }
 
+    @Test
+    fun `200 returned when calling cleanup endpoint`() {
+        mvc.perform(post("/cleanup")
+                .header("content-type", "application/json")
+                .content("{\"activeUsers\": [\"testuser1\", \"testuser2\"]}"))
+                .andExpect(status().isOk)
+    }
 }

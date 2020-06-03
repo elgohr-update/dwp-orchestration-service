@@ -16,6 +16,10 @@ data class DeployRequest @JsonCreator constructor(
         val additionalPermissions: List<String> = emptyList()
 )
 
+data class CleanupRequest(
+        val activeUsers: List<String>
+)
+
 data class JWTObject(val verifiedJWT: DecodedJWT, val userName: String, val cognitoGroup: List<String>)
 
 data class UserTask(val correlationId: String,

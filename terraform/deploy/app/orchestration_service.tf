@@ -209,17 +209,18 @@ module "jupyter_s3_storage" {
 ## Cleanup Lambda
 ## ---------------------------------------------------------------------------------------------------------------------
 module "cleanup_lambda" {
-  source               = "../../modules/cleanup-lambda"
-  name_prefix          = "${var.name_prefix}-cleanup-lambda"
-  common_tags          = local.common_tags
-  account              = local.account[local.environment]
-  region               = var.region
-  table_name           = "orchestration_service_user_tasks"
-  fqdn                 = module.ecs-fargate-service.fqdn
-  aws_subnets_private  = data.terraform_remote_state.analytical_service_infra.outputs.vpc.aws_subnets_private.*.id
-  alb_sg               = module.ecs-fargate-service.lb_sg.id
-  vpc_id               = data.terraform_remote_state.analytical_service_infra.outputs.vpc.aws_vpc.id
-  interface_vpce_sg_id = data.terraform_remote_state.analytical_service_infra.outputs.interface_vpce_sg_id
+  source                 = "../../modules/cleanup-lambda"
+  name_prefix            = "${var.name_prefix}-cleanup-lambda"
+  common_tags            = local.common_tags
+  account                = local.account[local.environment]
+  region                 = var.region
+  table_name             = "orchestration_service_user_tasks"
+  fqdn                   = module.ecs-fargate-service.fqdn
+  aws_subnets_private    = data.terraform_remote_state.analytical_service_infra.outputs.vpc.aws_subnets_private.*.id
+  alb_sg                 = module.ecs-fargate-service.lb_sg.id
+  vpc_id                 = data.terraform_remote_state.analytical_service_infra.outputs.vpc.aws_vpc.id
+  interface_vpce_sg_id   = data.terraform_remote_state.analytical_service_infra.outputs.interface_vpce_sg_id
+  dynamodb_prefixlist_id = data.terraform_remote_state.analytical_service_infra.outputs.dynamodb_prefix_list_id
 }
 
 ## ---------------------------------------------------------------------------------------------------------------------
