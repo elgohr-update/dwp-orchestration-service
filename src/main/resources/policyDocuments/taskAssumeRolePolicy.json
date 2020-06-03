@@ -8,8 +8,7 @@
       ],
       "Principal": {
         "Service": [
-          "ecs-tasks.amazonaws.com",
-          "ecs.amazonaws.com"
+          "ecs-tasks.amazonaws.com"
         ]
       }
     }
