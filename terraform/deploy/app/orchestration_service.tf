@@ -150,11 +150,11 @@ module "ecs-fargate-service" {
 
 data "aws_ami" "hardened" {
   most_recent = true
-  owners      = ["self", local.account["management"], "amazon"]
+  owners      = ["self", local.account["management"]]
 
   filter {
     name   = "name"
-    values = ["amzn-ami-*-amazon-ecs-optimized"]
+    values = ["dw-ecs-ami-*"]
   }
 }
 
