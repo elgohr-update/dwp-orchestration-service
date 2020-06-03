@@ -21,3 +21,11 @@ output "container_name" {
   description = "Name of the container"
   value       = var.container_name
 }
+
+output "log_group" {
+  description = "Orchestration Service Task log group attributes"
+  value = {
+    name = aws_cloudwatch_log_group.lamda_logs.name
+    arn  = aws_cloudwatch_log_group.lamda_logs.arn
+  }
+}
