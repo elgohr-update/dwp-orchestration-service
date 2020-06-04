@@ -26,7 +26,7 @@ resource "aws_iam_role_policy_attachment" "ecs" {
 }
 
 resource "aws_iam_role_policy_attachment" "ssm" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonSSMManagedInstanceCore"
   role       = aws_iam_role.user_host.id
 }
 
