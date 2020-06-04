@@ -244,3 +244,8 @@ variable "common_tags" {
   type        = map(string)
   description = "(Required) common tags to apply to aws resources"
 }
+
+variable "management_role_arn" {
+  type        = string
+  description = "(Required) The role to assume when accessing resources in management"
+}

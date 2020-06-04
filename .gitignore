@@ -56,3 +56,5 @@ logs/
 # Testing
 .kotlintest
 
+#archives
+*.zip
