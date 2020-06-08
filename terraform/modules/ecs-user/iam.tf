@@ -6,6 +6,7 @@ resource "aws_iam_role" "user_host" {
 
 data "aws_iam_policy_document" "assume_role_ec2" {
   statement {
+    sid     = "AllowEC2ToAssumeRole"
     actions = ["sts:AssumeRole"]
 
     principals {
@@ -37,6 +38,7 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_loggin" {
 
 data "aws_iam_policy_document" "ecr" {
   statement {
+    sid     = "AllowUserHostECRGetAuthToken"
     effect  = "Allow"
     actions = ["ecr:GetAuthorizationToken"]
 
@@ -44,6 +46,7 @@ data "aws_iam_policy_document" "ecr" {
   }
 
   statement {
+    sid    = "AllowUserHostPullForUserContainers"
     effect = "Allow"
     actions = [
       "ecr:GetDownloadUrlForLayer",
