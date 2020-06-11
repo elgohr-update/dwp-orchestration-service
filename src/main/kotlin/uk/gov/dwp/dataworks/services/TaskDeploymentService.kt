@@ -134,7 +134,7 @@ class TaskDeploymentService {
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
                 .environment(pairsToKeyValuePairs(
-                        "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -noclipboard -nosetclipboard",
+                        "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -noclipboard",
                         "CHROME_OPTS" to arrayOf(
                                 "--no-sandbox",
                                 "--window-position=0,0",
