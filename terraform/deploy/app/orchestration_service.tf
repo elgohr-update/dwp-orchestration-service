@@ -107,7 +107,9 @@ module "ecs-fargate-task-definition" {
         "*.${var.region}.compute.internal",
         "dynamodb.${var.region}.amazonaws.com",
         "elasticloadbalancing.${var.region}.amazonaws.com",
-        "ecs.${var.region}.amazonaws.com"
+        "ecs.${var.region}.amazonaws.com",
+        "application-autoscaling.${var.region}.amazonaws.com",
+        "events.${var.region}.amazonaws.com",
       ])
     },
     {

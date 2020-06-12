@@ -12,6 +12,7 @@ spruce:
   to: aviator_pipeline.yml
 fly:
   name: orchestration-service
-  target: concourse
-  expose: false
+  target: aws-concourse
+  expose: true
+  check_creds: true
   config: aviator_pipeline.yml
