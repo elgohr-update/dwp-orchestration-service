@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.ecs.model.ContainerCondition
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
+import software.amazon.awssdk.services.ecs.model.ContainerDependency
+import software.amazon.awssdk.services.ecs.model.HealthCheck
 import software.amazon.awssdk.services.ecs.model.KeyValuePair
 import software.amazon.awssdk.services.ecs.model.LoadBalancer
 import software.amazon.awssdk.services.ecs.model.NetworkMode
@@ -22,21 +25,28 @@ import java.util.UUID
 class TaskDeploymentService {
     @Autowired
     private lateinit var awsCommunicator: AwsCommunicator
+
     @Autowired
     private lateinit var activeUserTasks: ActiveUserTasks
+
     @Autowired
     private lateinit var taskDestroyService: TaskDestroyService
+
     @Autowired
     private lateinit var awsParsing: AwsParsing
+
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver
+
     @Autowired
     private lateinit var authService: AuthenticationService
 
     @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
     lateinit var taskAssumeRoleDocument: Resource
+
     @Value("classpath:policyDocuments/taskRolePolicy.json")
     lateinit var taskRoleDocument: Resource
+
     @Value("classpath:policyDocuments/jupyterBucketAccessPolicy.json")
     lateinit var jupyterBucketAccessDocument: Resource
 
@@ -86,7 +96,7 @@ class TaskDeploymentService {
             awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber), iamRole)
 
             val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostname, jupyterMemory, jupyterCpu, containerPort, jupyterS3Bucket, "arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/$userName-home", "arn:aws:kms:${configurationResolver.awsRegion}:$accountNumber:alias/${cognitoGroups.first()}-shared")
-            val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId,"orchestration-service-user-$userName-td", taskExecutionRoleArn , iamRole.arn(), NetworkMode.AWSVPC, containerDefinitions)
+            val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId, "orchestration-service-user-$userName-td", taskExecutionRoleArn, iamRole.arn(), NetworkMode.AWSVPC, containerDefinitions)
 
             // ECS
             awsCommunicator.createEcsService(correlationId, userName, ecsClusterName, taskDefinition, ecsLoadBalancer, taskSubnets, taskSecurityGroups)
@@ -101,20 +111,30 @@ class TaskDeploymentService {
 
     private fun buildLogConfiguration(userName: String, containerName: String): LogConfiguration {
         val logConfig = LogConfiguration.builder()
-            .logDriver("awslogs")
-            .options(mapOf(
-                "awslogs-group" to configurationResolver.getStringConfig(ConfigKey.CONTAINER_LOG_GROUP), 
-                "awslogs-region" to configurationResolver.getStringConfig(ConfigKey.AWS_REGION),
-                "awslogs-stream-prefix" to "${userName}_${containerName}"
-            ))
-            .build()
+                .logDriver("awslogs")
+                .options(mapOf(
+                        "awslogs-group" to configurationResolver.getStringConfig(ConfigKey.CONTAINER_LOG_GROUP),
+                        "awslogs-region" to configurationResolver.getStringConfig(ConfigKey.AWS_REGION),
+                        "awslogs-stream-prefix" to "${userName}_${containerName}"
+                ))
+                .build()
         return logConfig
     }
 
     private fun buildContainerDefinitions(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, guacamolePort: Int, jupyterS3Bucket: String, kmsHome: String, kmsShared: String): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
-        
+
+        val jupyterhubContainerDependency = ContainerDependency.builder()
+                .containerName("jupyterHub")
+                .condition(ContainerCondition.HEALTHY)
+                .build()
+        val jupyterhubHealthCheck = HealthCheck.builder()
+                .command("CMD", "wget", "-O-", "-S", "--no-check-certificate", "-q", "https://localhost:8000/hub/health")
+                .interval(12)
+                .timeout(12)
+                .startPeriod(20)
+                .build()
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
                 .image("$ecrEndpoint/aws-analytical-env/jupyterhub")
@@ -124,6 +144,7 @@ class TaskDeploymentService {
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
                 .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared))
                 .logConfiguration(buildLogConfiguration(userName, "jupyterHub"))
+                .healthCheck(jupyterhubHealthCheck)
                 .build()
 
         val headlessChrome = ContainerDefinition.builder()
@@ -154,6 +175,7 @@ class TaskDeploymentService {
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")))
                 .logConfiguration(buildLogConfiguration(userName, "headless_chrome"))
+                .dependsOn(jupyterhubContainerDependency)
                 .build()
 
         val guacd = ContainerDefinition.builder()
@@ -182,6 +204,7 @@ class TaskDeploymentService {
                         "CLIENT_USERNAME" to userName.substring(0, userName.length - 3)))
                 .portMappings(PortMapping.builder().hostPort(guacamolePort).containerPort(guacamolePort).build())
                 .logConfiguration(buildLogConfiguration(userName, "guacamole"))
+                .dependsOn(jupyterhubContainerDependency)
                 .build()
 
         return listOf(jupyterHub, headlessChrome, guacd, guacamole)
@@ -200,10 +223,10 @@ class TaskDeploymentService {
     *   Helper method to parse environment variables into arn strings and return lists of the values paired
     *   with the relevant SID of the IAM statement
      */
-    fun parseMap (cognitoGroups: List<String>, userName: String, accountId: String): Map<String, List<String>> {
+    fun parseMap(cognitoGroups: List<String>, userName: String, accountId: String): Map<String, List<String>> {
         val jupyterS3Arn = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
         val folderAccess = cognitoGroups
-                .map{awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$it-shared")}
+                .map { awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$it-shared") }
                 .plus(listOf("$jupyterS3Arn/*", awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.awsRegion}:$accountId:alias/$userName-home")))
         return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyterkmsaccessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
     }
