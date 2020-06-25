@@ -60,6 +60,7 @@ dependencies {
 	testImplementation("org.springframework.batch:spring-batch-test")
 	testImplementation("io.kotlintest:kotlintest-runner-junit5:3.3.3")
 	testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
+	testImplementation( "au.com.dius:pact-jvm-provider-spring_2.12:3.6.15")
 }
 
 tasks.withType<Test> {

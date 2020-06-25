@@ -21,7 +21,7 @@ class ConfigurationResolver {
     private val listConfigs: MutableMap<ConfigKey, List<String>> = mutableMapOf()
     val awsRegion: Region = kotlin.runCatching { Region.of(getStringConfig(AWS_REGION)) }.getOrDefault(Region.EU_WEST_2)
 
-    final fun getStringConfig(configKey: ConfigKey): String {
+    fun getStringConfig(configKey: ConfigKey): String {
         return stringConfigs.computeIfAbsent(configKey) {
             env.getProperty(configKey.key) ?: throw SystemArgumentException("No value found for ${configKey.key}")
         }

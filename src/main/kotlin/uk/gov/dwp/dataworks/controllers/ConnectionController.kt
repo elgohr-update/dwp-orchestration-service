@@ -53,7 +53,7 @@ class ConnectionController {
         ApiResponse(responseCode = "200", description = "Success"),
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
-    @PostMapping("/connect")
+    @PostMapping("/connect", produces = ["text/plain"])
     @ResponseStatus(HttpStatus.OK)
     fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): String {
         val jwtObject = authService.validate(token)
@@ -103,6 +103,7 @@ class ConnectionController {
     @ExceptionHandler(JWTVerificationException::class, SigningKeyNotFoundException::class)
     fun handleInvalidToken(res: HttpServletResponse, ex: Exception) {
         logger.warn("Failed to verify JWT token $ex")
+        res.setHeader("Content-Type", "text/plain");
         res.sendError(HttpStatus.UNAUTHORIZED.value(), "Failed to verify JWT token")
     }
 
