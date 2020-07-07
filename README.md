@@ -1,7 +1,7 @@
 # orchestration-service
 The service orchestrator for providing remote access into the analytical environment
 
-###Endpoint ot submit request for user containers 
+### Endpoint ot submit request for user containers
  Requests using JWT to be submitted as a post request to `/connect`  
  - The JWT should be sent as a string in the header under the key `Authorisation` 
  - The JWT should contain:
@@ -22,5 +22,14 @@ The service orchestrator for providing remote access into the analytical environ
      \* `Authorisation` field in request header is for JWT String with `/connect` endpoint or a test username (as a String) with `/deployusercontainers` endpoint.
      
      \** `additionalPermissions` should be an array eg. `["s3:List*", "s3:Get*"]`
+
+### Monitoring
+ This application uses Spring Actuator to provide metrics and healthchecks, which can
+ be found on the following endpoints:
+  - Prometheus metrics: `/metrics`
+  - Healthchecks:
+     * all: `/health`
+     * self: `/health/ping`
+     * AWS Service connections: `/health/aws`
 
 ![Image of Orchestration Service](OrchestrationService.png)
