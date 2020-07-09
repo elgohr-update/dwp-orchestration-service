@@ -30,7 +30,7 @@ import uk.gov.dwp.dataworks.aws.AwsParsing
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class])
-@SpringBootTest(properties = ["orchestrationService.cognito_user_pool_id=id", "orchestrationService.jupyterhub_bucket_arn=testArn", "orchestrationService.aws_account_number=1234"])
+@SpringBootTest(properties = ["orchestrationService.cognito_user_pool_id=id", "orchestrationService.jupyterhub_bucket_arn=testArn", "orchestrationService.aws_account_number=1234", "orchestrationService.aws_region=eu-west-2"])
 class TaskDeploymentServiceTest {
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
