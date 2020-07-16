@@ -152,7 +152,7 @@ class TaskDeploymentService {
                 .condition(ContainerCondition.HEALTHY)
                 .build()
         val headlessChromeHealthCheck = HealthCheck.builder()
-                .command("CMD", "nc", "-z", "127.0.0.1", "5900")
+                .command("CMD", "supervisorctl", "status", "|", "awk", "'BEGIN {c=0} $2 == \"RUNNING\" {c++} END {exit c != 3}")
                 .interval(12)
                 .timeout(12)
                 .startPeriod(20)
