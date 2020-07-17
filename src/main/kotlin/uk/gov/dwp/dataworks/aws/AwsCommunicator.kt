@@ -16,19 +16,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest
-import software.amazon.awssdk.services.ecs.model.AwsVpcConfiguration
-import software.amazon.awssdk.services.ecs.model.ContainerDefinition
-import software.amazon.awssdk.services.ecs.model.CreateServiceRequest
-import software.amazon.awssdk.services.ecs.model.DeleteServiceRequest
-import software.amazon.awssdk.services.ecs.model.NetworkConfiguration
-import software.amazon.awssdk.services.ecs.model.DescribeServicesRequest
-import software.amazon.awssdk.services.ecs.model.NetworkMode
-import software.amazon.awssdk.services.ecs.model.RegisterTaskDefinitionRequest
-import software.amazon.awssdk.services.ecs.model.Service
-import software.amazon.awssdk.services.ecs.model.ServiceNotActiveException
-import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
-import software.amazon.awssdk.services.ecs.model.TaskDefinition
-import software.amazon.awssdk.services.ecs.model.UpdateServiceRequest
+import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Action
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.CreateRuleRequest
@@ -324,13 +312,14 @@ class AwsCommunicator {
      * task role [taskRoleArn], networking mode [networkMode] (see [NetworkMode]) and container
      * definitions [containerDefinitions] (see [ContainerDefinition])
      */
-    fun registerTaskDefinition(correlationId: String, family: String, executionRoleArn: String, taskRoleArn: String, networkMode: NetworkMode, containerDefinitions: Collection<ContainerDefinition>): TaskDefinition {
+    fun registerTaskDefinition(correlationId: String, family: String, executionRoleArn: String, taskRoleArn: String, networkMode: NetworkMode, containerDefinitions: Collection<ContainerDefinition>, tags: Collection<Tag>): TaskDefinition {
         val registerTaskDefinitionRequest = RegisterTaskDefinitionRequest.builder()
                 .family(family)
                 .executionRoleArn(executionRoleArn)
                 .taskRoleArn(taskRoleArn)
                 .networkMode(networkMode)
                 .containerDefinitions(containerDefinitions)
+                .tags(tags)
                 .build()
 
         logger.info("Registering task definition",

@@ -1,19 +1,13 @@
 package uk.gov.dwp.dataworks.services
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.services.ecs.model.ContainerCondition
-import software.amazon.awssdk.services.ecs.model.ContainerDefinition
-import software.amazon.awssdk.services.ecs.model.ContainerDependency
-import software.amazon.awssdk.services.ecs.model.HealthCheck
-import software.amazon.awssdk.services.ecs.model.KeyValuePair
-import software.amazon.awssdk.services.ecs.model.LoadBalancer
-import software.amazon.awssdk.services.ecs.model.NetworkMode
-import software.amazon.awssdk.services.ecs.model.PortMapping
-import software.amazon.awssdk.services.ecs.model.LogConfiguration
+import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
@@ -71,6 +65,15 @@ class TaskDeploymentService {
         //Create an entry in DynamoDB for current deployment
         activeUserTasks.initialiseDeploymentEntry(correlationId, userName)
 
+        val mapper: ObjectMapper = jacksonObjectMapper()
+        val defaultTags : Map<String,String> = mapper.readValue(configurationResolver.getStringConfig(ConfigKey.TAGS))
+
+        val tags : MutableCollection<Tag> = mutableListOf()
+
+        defaultTags.forEach { tags += tags + Tag.builder().key(it.key).value(it.value).build()}
+        tags += Tag.builder().key("CreatedBy").value("Orchestration Service").build()
+        tags += Tag.builder().key("Team").value(cognitoGroups.first()).build()
+        tags += Tag.builder().key("Name").value("orchestration-service-user-$userName-td").build()
 
         try {
             // Load balancer & Routing
@@ -96,7 +99,7 @@ class TaskDeploymentService {
             awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber), iamRole)
 
             val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostname, jupyterMemory, jupyterCpu, containerPort, jupyterS3Bucket, "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/$userName-home", "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/${cognitoGroups.first()}-shared")
-            val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId, "orchestration-service-user-$userName-td", taskExecutionRoleArn, iamRole.arn(), NetworkMode.AWSVPC, containerDefinitions)
+            val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId, "orchestration-service-user-$userName-td", taskExecutionRoleArn, iamRole.arn(), NetworkMode.AWSVPC, containerDefinitions, tags)
 
             // ECS
             awsCommunicator.createEcsService(correlationId, userName, ecsClusterName, taskDefinition, ecsLoadBalancer, taskSubnets, taskSecurityGroups)

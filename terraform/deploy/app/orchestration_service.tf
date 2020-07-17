@@ -115,6 +115,10 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.container_log_group"
       value = module.ecs-user-host.outputs.user_container_log_group
+    },
+    {
+      name  = "TAGS"
+      value = jsonencode(local.common_tags)
     }
   ]
 }

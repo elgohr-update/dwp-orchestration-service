@@ -70,5 +70,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     USER_TASK_VPC_SUBNETS("orchestrationService.user_task_subnets", true),
     ECR_ENDPOINT("orchestrationService.ecr_endpoint", false),
     AWS_ACCOUNT_NUMBER("orchestrationService.aws_account_number", false),
-    CONTAINER_LOG_GROUP("orchestrationService.container_log_group", false)
+    CONTAINER_LOG_GROUP("orchestrationService.container_log_group", false),
+    TAGS("TAGS", false)
 }
