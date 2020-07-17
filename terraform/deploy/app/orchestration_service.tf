@@ -181,7 +181,7 @@ module "ecs-user-host" {
   emr_sg_id          = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_sg_id
   management_account = local.account[local.management_account[local.environment]]
   vpc = {
-    id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
+    id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private
     interface_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.interface_vpce_sg_id
     s3_prefix_list_id    = data.terraform_remote_state.aws_analytical_env_infra.outputs.s3_prefix_list_id
@@ -208,7 +208,7 @@ module "jupyter_s3_storage" {
 
   common_tags    = local.common_tags
   logging_bucket = data.terraform_remote_state.security-tools.outputs.logstore_bucket.id
-  vpc_id         = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc
+  vpc_id         = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
 }
 
 #
