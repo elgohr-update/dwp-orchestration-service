@@ -70,7 +70,13 @@ class TaskDeploymentService {
 
         val tags : MutableCollection<Tag> = mutableListOf()
 
-        defaultTags.forEach { tags += tags + Tag.builder().key(it.key).value(it.value).build()}
+        defaultTags.forEach {
+            // Remove any existing tags with the same name.
+            if (it.key !== "CreatedBy" && it.key !== "Team" && it.key !== "Name") {
+                tags += tags + Tag.builder().key(it.key).value(it.value).build()
+            }
+        }
+
         tags += Tag.builder().key("CreatedBy").value("Orchestration Service").build()
         tags += Tag.builder().key("Team").value(cognitoGroups.first()).build()
         tags += Tag.builder().key("Name").value("orchestration-service-user-$userName-td").build()

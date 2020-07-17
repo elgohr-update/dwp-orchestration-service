@@ -64,7 +64,7 @@ import java.net.URI
             "orchestrationService.ecr_endpoint=endpoint",
             "orchestrationService.debug=false",
             "orchestrationService.jupyterhub_bucket_arn=arn:aws:s3:::bucketTest",
-            "TAGS={\"Environmemt\":\"integration\"}"
+            "TAGS={\"Name\":\"TaskName\"}"
         ],
         controllers = [
             ConnectionController::class,
