@@ -319,7 +319,7 @@ class AwsCommunicator {
                 .taskRoleArn(taskRoleArn)
                 .networkMode(networkMode)
                 .containerDefinitions(containerDefinitions)
-                .tags(tags)
+                //.tags(tags)
                 .build()
 
         logger.info("Registering task definition",
@@ -328,6 +328,7 @@ class AwsCommunicator {
                 "execution_role_arn" to executionRoleArn,
                 "task_role_arn" to taskRoleArn,
                 "network_mode" to networkMode.toString(),
+                "tags" to tags.joinToString { tag -> "${tag.key()}:${tag.value()}" },
                 "container_definitions" to containerDefinitions.joinToString("; ", transform = { def ->
                     val env = def.environment().joinToString { "${it.name()}:${it.value()}" }
                     "${def.name()}, image=${def.image()}, cpu = ${def.cpu()}, memory= ${def.memory()} env = [${env}]"
