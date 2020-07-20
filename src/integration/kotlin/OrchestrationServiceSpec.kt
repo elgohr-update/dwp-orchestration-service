@@ -64,7 +64,7 @@ import java.net.URI
             "orchestrationService.ecr_endpoint=endpoint",
             "orchestrationService.debug=false",
             "orchestrationService.jupyterhub_bucket_arn=arn:aws:s3:::bucketTest",
-            "TAGS={\"Name\":\"TaskName\"}"
+            "TAGS={\"Name\":\"TaskName\", \"Fruit\": \"Cherry\", \"Colour\":\"Red\"}"
         ],
         controllers = [
             ConnectionController::class,

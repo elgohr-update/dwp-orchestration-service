@@ -73,7 +73,7 @@ class TaskDeploymentService {
         defaultTags.forEach {
             // Remove any existing tags with the same name.
             if (it.key !== "CreatedBy" && it.key !== "Team" && it.key !== "Name") {
-                tags += tags + Tag.builder().key(it.key).value(it.value).build()
+                tags += Tag.builder().key(it.key).value(it.value).build()
             }
         }
 
