@@ -319,7 +319,7 @@ class AwsCommunicator {
                 .taskRoleArn(taskRoleArn)
                 .networkMode(networkMode)
                 .containerDefinitions(containerDefinitions)
-                //.tags(tags)
+                .tags(tags)
                 .build()
 
         logger.info("Registering task definition",
