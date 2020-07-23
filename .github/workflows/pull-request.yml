@@ -1,0 +1,59 @@
+name: 'Pull Request'
+on:
+  pull_request:
+    branches:
+      - master
+env:
+  IMAGE_NAME: dwpdigital/orchestration-service
+
+jobs:
+  pull_request:
+
+    runs-on: ubuntu-latest
+
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+        env:
+          DEBUG: 1
+          SERVICES: dynamodb,iam,kms
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: terraform-setup
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.12.19
+      - name: terraform-fmt
+        id: fmt
+        run: terraform fmt --recursive
+
+      - name: build-docker-image
+        run: |
+          ./gradlew clean build
+          docker build -t ${{ env.IMAGE_NAME }}:latest .
+
+      - name: test
+        run: ./gradlew build test
+
+      - name: integration-test
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_SECRET_ACCESS_KEY: foo
+          AWS_ACCESS_KEY_ID: bar
+        run: ./gradlew integration
+
+      - name: archive-docker-image
+        run: docker save -o image.tar ${{ env.IMAGE_NAME }}
+
+      - name: snyk-scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          args: --file=Dockerfile --policy-path=./.snyk --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
