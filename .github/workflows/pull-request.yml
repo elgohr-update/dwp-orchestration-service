@@ -47,9 +47,6 @@ jobs:
           AWS_ACCESS_KEY_ID: bar
         run: ./gradlew integration
 
-      - name: archive-docker-image
-        run: docker save -o image.tar ${{ env.IMAGE_NAME }}
-
       - name: snyk-scan
         uses: snyk/actions/docker@master
         env:

@@ -16,6 +16,7 @@
       ]
     },
     {
+      "Sid": "codecommitpolicy",
       "Effect": "Allow",
       "Action": [
         "codecommit:AssociateApprovalRuleTemplateWithRepository",
@@ -42,7 +43,9 @@
         "codecommit:GitPull",
         "codecommit:GitPush"
       ],
-      "Resource": "*"
+      "Resource": [
+        "*"
+      ]
     }
   ]
 }
