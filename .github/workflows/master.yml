@@ -20,6 +20,13 @@ jobs:
           ./gradlew clean build
           docker build -t ${{ env.IMAGE_NAME }}:latest .
 
+      - name: upload-jar-artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: libs
+          path: build/libs/*.jar
+
       - name: notify-slack
         uses: 8398a7/action-slack@v3
         with:
@@ -68,6 +75,16 @@ jobs:
     needs: publish-github-release
     steps:
       - uses: actions/checkout@v2
+
+      - name: download-jar-artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: libs
+
+      - name: move-file-for-publish
+        run: |
+          mkdir build
+          mv libs build/
 
       - name: Get release version
         id: get_version
