@@ -84,7 +84,8 @@ jobs:
       - name: move-file-for-publish
         run: |
           mkdir -p build/libs
-          unzip libs.zip -d build/libs
+          cp ${GITHUB_WORKSPACE}/*.jar build/libs/
+        if: ${{ success() }}
 
       - name: Get release version
         id: get_version
