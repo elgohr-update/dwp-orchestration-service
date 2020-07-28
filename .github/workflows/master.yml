@@ -83,8 +83,8 @@ jobs:
 
       - name: move-file-for-publish
         run: |
-          mkdir build
-          mv libs build/
+          mkdir build/libs
+          unzip libs.zip -d ./build/libs
 
       - name: Get release version
         id: get_version
