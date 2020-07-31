@@ -97,7 +97,7 @@ data "terraform_remote_state" "security-tools" {
 }
 
 provider "aws" {
-  version = "~> 2.46.0"
+  version = "~> 2.70.0"
   region = "{{provider_region}}"
 
   assume_role {
@@ -109,6 +109,7 @@ locals {
   name = "orchestration-service"
   environment = terraform.workspace == "default" ? "development" : terraform.workspace
   container_image = "${local.account[local.management_account[local.environment]]}.dkr.ecr.${var.region}.amazonaws.com/orchestration-service"
+  data_science_git_repo = "Data_Science-${local.environment}"
 
   root_dns_prefix = {
     development = "dev"

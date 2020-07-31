@@ -85,6 +85,10 @@ module "ecs-fargate-task-definition" {
       value = local.account[local.environment]
     },
     {
+      name  = "orchestrationService.data_science_git_repo"
+      value = local.data_science_git_repo
+    },
+    {
       name  = "PROXY_HOST"
       value = data.terraform_remote_state.analytical_service_infra.outputs.vpc.internet_proxy_vpce.dns_name
     },
