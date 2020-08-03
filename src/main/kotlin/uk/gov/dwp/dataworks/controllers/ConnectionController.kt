@@ -65,7 +65,7 @@ class ConnectionController {
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
     @PostMapping("/debug/deploy")
-    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestHeader("Authorisation") cognitoGroups: List<String>, @RequestBody requestBody: DeployRequest): String {
+    fun launchTask(@RequestHeader("Authorisation") userName: String, @RequestHeader("cognitoGroups") cognitoGroups: List<String>, @RequestBody requestBody: DeployRequest): String {
         if (configurationResolver.getStringConfig(ConfigKey.DEBUG) != "true" )
             throw ForbiddenException("Debug routes not enabled")
         return handleConnectionRequest(userName,cognitoGroups, requestBody)
