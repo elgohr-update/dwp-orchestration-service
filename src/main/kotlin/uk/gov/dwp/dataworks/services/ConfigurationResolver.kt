@@ -72,5 +72,7 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     AWS_ACCOUNT_NUMBER("orchestrationService.aws_account_number", false),
     CONTAINER_LOG_GROUP("orchestrationService.container_log_group", false),
     TAGS("TAGS", false),
-    DATA_SCIENCE_GIT_REPO("orchestrationService.data_science_git_repo", false)
+    DATA_SCIENCE_GIT_REPO("orchestrationService.data_science_git_repo", false),
+    PUSH_HOST("orchestrationService.push_gateway_host", false),
+    PUSH_CRON("orchestrationService.push_gateway_cron", false)
 }

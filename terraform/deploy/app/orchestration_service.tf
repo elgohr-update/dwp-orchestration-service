@@ -123,7 +123,16 @@ module "ecs-fargate-task-definition" {
     {
       name  = "TAGS"
       value = jsonencode(local.common_tags)
+    },
+    {
+      name  = "orchestrationService.push_gateway_host"
+      value = data.terraform_remote_state.aws_analytical_env_infra.outputs.alb_fqdn
+    },
+    {
+      name  = "orchestrationService.push_gateway_cron"
+      value = "*/5 * * * *"
     }
+
   ]
 }
 #

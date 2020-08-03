@@ -65,7 +65,9 @@ import java.net.URI
             "orchestrationService.debug=false",
             "orchestrationService.jupyterhub_bucket_arn=arn:aws:s3:::bucketTest",
             "TAGS={\"Name\":\"TaskName\", \"Fruit\": \"Cherry\", \"Colour\":\"Red\"}",
-            "orchestrationService.data_science_git_repo=codecommit_repo"
+            "orchestrationService.data_science_git_repo=codecommit_repo",
+            "orchestrationService.push_gateway_host=testlb",
+            "orchestrationService.push_gateway_cron=*/5 * * * *"
         ],
         controllers = [
             ConnectionController::class,
