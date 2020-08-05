@@ -21,10 +21,6 @@ resource "aws_autoscaling_group" "user_host" {
       propagate_at_launch = true
     }
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 data "template_cloudinit_config" "ecs_config" {

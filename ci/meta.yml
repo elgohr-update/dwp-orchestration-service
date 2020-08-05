@@ -97,3 +97,21 @@ meta:
         - name: terraform-config
         outputs:
         - name: terraform-output
+
+    terraform-taint:
+      task: terraform-taint
+      .: (( inject meta.plan.terraform-common-config ))
+      config:
+        run:
+          path: sh
+          args:
+            - -exc
+            - |
+              cp terraform-config/terraform.tf .
+              cp terraform-config/terraform.tfvars .
+              terraform workspace show
+              terraform init
+              terraform taint "module.ecs-user-host.aws_autoscaling_group.user_host"
+        inputs:
+          - name: aws-analytical-env
+          - name: terraform-config
