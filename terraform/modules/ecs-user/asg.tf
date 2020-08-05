@@ -44,6 +44,7 @@ EOF
     content      = <<EOF
     #!/bin/bash
     echo ECS_CLUSTER=${var.name_prefix} >> /etc/ecs/ecs.config
+    echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config
 EOF
   }
 
