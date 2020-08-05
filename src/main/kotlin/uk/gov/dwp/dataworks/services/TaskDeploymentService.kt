@@ -143,6 +143,7 @@ class TaskDeploymentService {
                 .build()
         val rstudioOssContainerDependency = ContainerDependency.builder()
                 .containerName("rstudio-oss")
+                .condition(ContainerCondition.START)
                 .build()
         val jupyterhubHealthCheck = HealthCheck.builder()
                 .command("CMD", "wget", "-O-", "-S", "--no-check-certificate", "-q", "https://localhost:8000/hub/health")
