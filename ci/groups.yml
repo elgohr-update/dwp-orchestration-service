@@ -9,10 +9,3 @@ groups:
 - name: pull-request
   jobs:
   - orchestration-service-pr
-- name: roll-os-user
-  jobs:
-    - taint-dev
-    - taint-qa
-    - taint-int
-    - taint-preprod
-    - taint-prod

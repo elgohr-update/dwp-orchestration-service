@@ -9,8 +9,6 @@ spruce:
     except:
     - management-dev.yml.j2
     - management.yml.j2
-  - with_in: ci/jobs/taint/
-    regexp: ".*yml"
   to: aviator_pipeline.yml
 fly:
   name: orchestration-service
