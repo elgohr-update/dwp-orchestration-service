@@ -27,6 +27,23 @@ resource "aws_autoscaling_group" "user_host" {
   }
 }
 
+resource "aws_autoscaling_schedule" "scale_up_6am" {
+  scheduled_action_name  = "scale_up_6am"
+  min_size               = var.auto_scaling.min_size
+  desired_capacity       = var.auto_scaling.min_size
+  max_size               = var.auto_scaling.max_size
+  recurrence             = "5 6 * * * "
+  autoscaling_group_name = aws_autoscaling_group.user_host.name
+}
+
+resource "aws_autoscaling_schedule" "scale_down_midnight" {
+  scheduled_action_name  = "scale_down_midnight"
+  min_size               = 0
+  max_size               = var.auto_scaling.max_size
+  recurrence             = "5 0 * * * "
+  autoscaling_group_name = aws_autoscaling_group.user_host.name
+}
+
 data "template_cloudinit_config" "ecs_config" {
   gzip          = true
   base64_encode = true
