@@ -5,9 +5,9 @@ resource "aws_cloudwatch_event_rule" "fire_at_midnight" {
 }
 
 resource "aws_cloudwatch_event_target" "cleanup_lambda_target" {
-  rule      = aws_cloudwatch_event_rule.fire_at_midnight.name
-  target_id = "lambda"
-  arn       = aws_lambda_function.cleanup_lambda.arn
+  rule       = aws_cloudwatch_event_rule.fire_at_midnight.name
+  target_id  = "lambda"
+  arn        = aws_lambda_function.cleanup_lambda.arn
   depends_on = [aws_cloudwatch_event_rule.fire_at_midnight]
 }
 

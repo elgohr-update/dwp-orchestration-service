@@ -126,7 +126,7 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.push_gateway_host"
-      value = data.terraform_remote_state.aws_analytical_env_infra.outputs.alb_fqdn
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.pushgateway.fqdn
     },
     {
       name  = "orchestrationService.push_gateway_cron"
@@ -193,6 +193,8 @@ module "ecs-user-host" {
   guacamole_port     = local.guacamole_port
   emr_sg_id          = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_sg_id
   management_account = local.account[local.management_account[local.environment]]
+  pushgateway_sg_id  = data.terraform_remote_state.aws_analytical_env_app.outputs.pushgateway.lb_sg.id
+
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private

@@ -72,3 +72,23 @@ resource "aws_security_group_rule" "ingress_emr_livy_from_host" {
   source_security_group_id = aws_security_group.user_host.id
   type                     = "ingress"
 }
+
+resource "aws_security_group_rule" "ingress_pushgw_from_host" {
+  description              = "Allow Pushgateway TCP ingress from user host"
+  protocol                 = "tcp"
+  from_port                = var.pushgateway_port
+  to_port                  = var.pushgateway_port
+  security_group_id        = var.pushgateway_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "ingress"
+}
+
+resource "aws_security_group_rule" "egress_host_to_pushgw" {
+  description              = "Allow host TCP egress to Pushgateway"
+  protocol                 = "tcp"
+  from_port                = var.pushgateway_port
+  to_port                  = var.pushgateway_port
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.pushgateway_sg_id
+  type                     = "egress"
+}

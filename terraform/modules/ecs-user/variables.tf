@@ -58,3 +58,14 @@ variable emr_sg_id {
   type        = string
   description = "Security Group id of EMR cluster"
 }
+
+variable pushgateway_sg_id {
+  type        = string
+  description = "Security Group ID of the Pushgateway"
+}
+
+variable pushgateway_port {
+  type        = string
+  description = "Port that the Pushgateway listens on "
+  default     = 9091
+}
