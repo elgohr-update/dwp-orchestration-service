@@ -38,9 +38,11 @@ data "aws_iam_policy_document" "task_role" {
     resources = ["arn:aws:dynamodb:eu-west-2:${var.account}:table/orchestration_service_user_tasks"]
   }
   statement {
-    sid = "AllowEC2DescribeImage"
+    sid = "AllowSpecificEC2DescribeActions"
     actions = [
       "ec2:DescribeImages",
+      "ec2:DescribeVpcs",
+      "ec2:DescribeInternetGateways"
     ]
 
     resources = ["*"]
