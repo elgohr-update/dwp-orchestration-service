@@ -157,7 +157,7 @@ class TaskDeploymentService {
                 .cpu(jupyterCpu)
                 .memory(jupyterMemory)
                 .essential(true)
-                .portMappings(PortMapping.builder().containerPort(8787).hostPort(8787).build())
+                .portMappings(PortMapping.builder().containerPort(8001).hostPort(8001).build())
                 .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared, "DISABLE_AUTH" to "true"))
                 .logConfiguration(buildLogConfiguration(userName, "rstudio-oss"))
                 .build()
@@ -203,7 +203,7 @@ class TaskDeploymentService {
                                 "--disable-infobars",
                                 "--disable-features=TranslateUI",
                                 "--disk-cache-dir=/dev/null",
-                                "--test-type https://localhost:8000 http://localhost:8787",
+                                "--test-type https://localhost:8000 https://localhost:8001",
                                 "--start-fullscreen",
                                 "--ignore-certificate-errors",
                                 "--enable-auto-reload",
