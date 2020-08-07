@@ -31,6 +31,7 @@ class AuthenticationServiceTest {
     private val noneCognitoOnly= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwidXNlcm5hbWUiOiJ1c2VyTmFtZSIsImlzcyI6IlRlc3RJc3N1ZXIiLCJzdWIiOiIxMjM0NTY3ODkwIn0.lYmwmI8or4iwitQAgWOatlcSRaKbQXxU4THERZdtSzBgZ_B4bhydmgNEagfU0nYue81uhoJI96pU5_sS99YfVVrNoHjMXOoT8J_y98N1sjg-qdITTN5ukMTUOvtOzE93OhB6lfWxuFPxf1SDOI83V9BPdFtal32828Nuz48ZGWzmm1fb3lvGtiaWX8O-aOtSyxZOUH4JnbcMKD6YTldTKsyn6-qwN3ZrTHXB0qG0sEJYbuJD2vY7YYZbQ7SyyCXPjS0zJmSYzqiwfwyHD2J6E6IHQpCaFz2Iy4iiGJnkOTsX7JYr58wsd08-yjeTVkbxADf2_TLY2erz8Y5SUjnvJQ"
     private val noUserName= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwibm9Vc2VyTmFtZSI6Im5vTmFtZSJ9.ELIjgAc31MS4ul32KKmTxYSumL1hOnQmfh0z6BEvMdH0Jwi0Ocm79raWqcjQwARmw77EgijqBhU7WYkYh9rQ7yLJfd2CBe8Exuu-cFIyw-xPCS3xlYfUavTIgWHQz_J690-WcFWS1boxMDGp247ciS1tLdHcQ1GpGgTc4XnED14NeN2OvEWvdmnF8o7ZJbq34EjPK_FndXwsT2ldOHAk_gBIFcux0FMOb8dWQCtjimFU9jEgZCRWFLAFQR4lamZzqDvs6xtfSQX_I6aQ5tgcFPzTVs8OEkUPWZNMduyXsRUHbbUoIL7z6dJOnFI60d14vEmHW8vl9iySXg8XDuJ-4A"
     private val noGroups= "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJub0NvZ25pdG86Z3JvdXBzIjpbImNnMSIsImNnMiJdLCJ1c2VybmFtZSI6IlRlc3RVc2VyTmFtZSJ9.m-9P5Ci1V8kacH8_lEKiJ8Ddeo9yowf51KsuEqjqmMOoaMuv-XML1pHpJTgaYnRoDiKNzEAoKIz7Bd5ozemS4vGRr_2Iis94qa_nmM1KVnodkLDOelot5cneMLrSqGy65SBwXYiEjM-RXr13yA5gDRtVrK9hrGVtdnvKTwaSoCpFNHC7vznkTTPXXkI0oRPQ35pwrOfE0ClSfO7GLp3xZfq5S-RBILBHvf4Gd2aE_13SqzIwGJqCW4_9Guzvjnf2f7B1zNcVHdSAYQ78XQPn38WxhKI14_Aus58GHWtL9OyK2r-3_3mZc2rnEN_2cAPpOFyVUd09GiUYwb-YLFygUA"
+    private val adfsUser= "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjb2duaXRvOmdyb3VwcyI6WyJjZzEiLCJjZzIiXSwiY29nbml0bzp1c2VybmFtZSI6IkRXX0FERlMuVEVTVEBEV1AuR0lTLkdPVi5VSyIsImlzcyI6IlRlc3RJc3N1ZXIiLCJzdWIiOiIxMjM0NTY3ODkwIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiODc2NTQzMjEiLCJqdGkiOiJhNDdlNjFkMy00YmE3LTQ2YWQtYWZlZS1jYTkwYzAwZGZiZWYiLCJpYXQiOjE1OTY3OTY0MzQsImV4cCI6MTU5NjgwMDAzNH0.Ve2qip1p_uo2ODTzk5OsbN_orjemPP0ygXHAxJA0-84"
 
     @BeforeEach
     fun setup() {
@@ -71,5 +72,12 @@ class AuthenticationServiceTest {
         Assertions.assertThatCode { authenticationService.groupsFromJwt(decodedJWT)}
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessage("No cognito groups found in JWT token")
+    }
+
+    @Test
+    fun `Uses the preferred_username rather than cognito_username`() {
+        val decodedJWT = JWT.decode(adfsUser)
+        val userName = authenticationService.userNameFromJwt(decodedJWT)
+        Assertions.assertThat(userName).isEqualTo("87654321123")
     }
 }
