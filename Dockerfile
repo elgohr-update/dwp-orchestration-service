@@ -1,4 +1,4 @@
-FROM openjdk:13-alpine
+FROM openjdk:14-alpine
 ENV APP_NAME=orchestration-service
 ENV APP_HOME=/opt/${APP_NAME}
 ENV USER=os_user
