@@ -166,6 +166,7 @@ module "ecs-fargate-service" {
   root_dns_suffix           = local.root_dns_name[local.environment]
   cert_authority_arn        = data.terraform_remote_state.aws_certificate_authority.outputs.root_ca.arn
   internet_proxy_vpce_sg_id = data.terraform_remote_state.analytical_service_infra.outputs.vpc.internet_proxy_vpce.sg_id
+  logging_bucket            = data.terraform_remote_state.security-tools.outputs.logstore_bucket.id
 }
 
 data "aws_ami" "hardened" {
