@@ -175,7 +175,7 @@ data "aws_ami" "hardened" {
 
   filter {
     name   = "name"
-    values = ["dw-ecs-ami-*"]
+    values = ["dw-al2-ecs-ami-*"]
   }
 }
 

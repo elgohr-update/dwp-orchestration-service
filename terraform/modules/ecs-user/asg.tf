@@ -52,7 +52,8 @@ data "template_cloudinit_config" "ecs_config" {
     content_type = "text/x-shellscript"
     content      = <<EOF
     #!/bin/bash
-    yum install -y amazon-ssm-agent && initctl start amazon-ssm-agent
+    sed -i '/^\[Service\]/a MountFlags=shared' /usr/lib/systemd/system/docker.service
+    systemctl daemon-reload
 EOF
   }
 
