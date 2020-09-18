@@ -308,28 +308,28 @@ class AwsCommunicator {
     }
 
     /**
-     * Registers a new [TaskDefinition] with family name [family], execution role [executionRoleArn],
-     * task role [taskRoleArn], networking mode [networkMode] (see [NetworkMode]) and container
-     * definitions [containerDefinitions] (see [ContainerDefinition])
+     * Registers a new [TaskDefinition]
      */
-    fun registerTaskDefinition(correlationId: String, family: String, executionRoleArn: String, taskRoleArn: String, networkMode: NetworkMode, containerDefinitions: Collection<ContainerDefinition>, tags: Collection<Tag>): TaskDefinition {
+    fun registerTaskDefinition(correlationId: String, taskDefinition: TaskDefinition, tags: Collection<Tag>): TaskDefinition {
+        TaskDefinition.builder().build()
         val registerTaskDefinitionRequest = RegisterTaskDefinitionRequest.builder()
-                .family(family)
-                .executionRoleArn(executionRoleArn)
-                .taskRoleArn(taskRoleArn)
-                .networkMode(networkMode)
-                .containerDefinitions(containerDefinitions)
+                .family(taskDefinition.family())
+                .executionRoleArn(taskDefinition.executionRoleArn())
+                .taskRoleArn(taskDefinition.taskRoleArn())
+                .networkMode(taskDefinition.networkMode())
+                .volumes(taskDefinition.volumes())
+                .containerDefinitions(taskDefinition.containerDefinitions())
                 .tags(tags)
                 .build()
 
         logger.info("Registering task definition",
                 "correlation_id" to correlationId,
-                "family" to family,
-                "execution_role_arn" to executionRoleArn,
-                "task_role_arn" to taskRoleArn,
-                "network_mode" to networkMode.toString(),
+                "family" to taskDefinition.family(),
+                "execution_role_arn" to taskDefinition.executionRoleArn(),
+                "task_role_arn" to taskDefinition.taskRoleArn(),
+                "network_mode" to taskDefinition.networkModeAsString(),
                 "tags" to tags.joinToString { tag -> "${tag.key()}:${tag.value()}" },
-                "container_definitions" to containerDefinitions.joinToString("; ", transform = { def ->
+                "container_definitions" to taskDefinition.containerDefinitions().joinToString("; ", transform = { def ->
                     val env = def.environment().joinToString { "${it.name()}:${it.value()}" }
                     "${def.name()}, image=${def.image()}, cpu = ${def.cpu()}, memory= ${def.memory()} env = [${env}]"
                 }))

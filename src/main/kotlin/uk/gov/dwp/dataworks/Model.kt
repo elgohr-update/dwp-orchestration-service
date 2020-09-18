@@ -53,6 +53,21 @@ data class UserTask(val correlationId: String,
     }
 }
 
+data class UserContainerProperties(
+        val userName: String,
+        val emrHostname: String,
+        val jupyterCpu: Int,
+        val jupyterMemory: Int,
+        val guacamolePort: Int,
+        val userS3Bucket: String,
+        val kmsHome: String,
+        val kmsShared: String,
+        val gitRepo: String,
+        val pushHost: String,
+        val pushCron: String,
+        val s3fsVolumeName: String
+)
+
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
 data class StatementObject(
         @JsonProperty("Sid") var sid: String,

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
+import uk.gov.dwp.dataworks.UserContainerProperties
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.aws.AwsParsing
 import uk.gov.dwp.dataworks.logging.DataworksLogger
@@ -59,7 +60,7 @@ class TaskDeploymentService {
         val albName = configurationResolver.getStringConfig(ConfigKey.LOAD_BALANCER_NAME)
         val ecsClusterName = configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME)
         val emrClusterHostname = configurationResolver.getStringConfig(ConfigKey.EMR_CLUSTER_HOSTNAME)
-        val jupyterS3Bucket = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
+        val userS3Bucket = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
         val accountNumber = configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER)
         val gitRepo = configurationResolver.getStringConfig(ConfigKey.DATA_SCIENCE_GIT_REPO)
         val pushHost = configurationResolver.getStringConfig(ConfigKey.PUSH_HOST)
@@ -69,9 +70,9 @@ class TaskDeploymentService {
         activeUserTasks.initialiseDeploymentEntry(correlationId, userName)
 
         val mapper: ObjectMapper = jacksonObjectMapper()
-        val defaultTags : Map<String,String> = mapper.readValue(configurationResolver.getStringConfig(ConfigKey.TAGS))
+        val defaultTags: Map<String, String> = mapper.readValue(configurationResolver.getStringConfig(ConfigKey.TAGS))
 
-        val tags : MutableCollection<Tag> = mutableListOf()
+        val tags: MutableCollection<Tag> = mutableListOf()
 
         defaultTags.forEach {
             // Remove any existing tags with the same name.
@@ -107,11 +108,41 @@ class TaskDeploymentService {
             awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
             awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber), iamRole)
 
-            val containerDefinitions = buildContainerDefinitions(userName, emrClusterHostname, jupyterMemory, jupyterCpu, containerPort, jupyterS3Bucket, "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/$userName-home", "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/${cognitoGroups.first()}-shared", gitRepo, pushHost, pushCron)
-            val taskDefinition = awsCommunicator.registerTaskDefinition(correlationId, "orchestration-service-user-$userName-td", taskExecutionRoleArn, iamRole.arn(), NetworkMode.AWSVPC, containerDefinitions, tags)
+            val s3fsVolume = Volume.builder()
+                    .name("s3fs")
+                    .host(HostVolumeProperties.builder().sourcePath("/opt/$userName").build())
+                    .build()
+
+            val userContainerProperties = UserContainerProperties(
+                    userName,
+                    emrClusterHostname,
+                    jupyterCpu,
+                    jupyterMemory,
+                    containerPort,
+                    userS3Bucket,
+                    "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/$userName-home",
+                    "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/${cognitoGroups.first()}-shared",
+                    gitRepo,
+                    pushHost,
+                    pushCron,
+                    s3fsVolume.name()
+            )
+
+            val containerDefinitions = buildContainerDefinitions(userContainerProperties)
+
+            val taskDefinition = TaskDefinition.builder()
+                    .family("orchestration-service-user-$userName-td")
+                    .executionRoleArn(taskExecutionRoleArn)
+                    .taskRoleArn(iamRole.arn())
+                    .networkMode(NetworkMode.AWSVPC)
+                    .containerDefinitions(containerDefinitions)
+                    .volumes(s3fsVolume)
+                    .build()
+
+            val registeredTaskDefinition = awsCommunicator.registerTaskDefinition(correlationId, taskDefinition, tags)
 
             // ECS
-            awsCommunicator.createEcsService(correlationId, userName, ecsClusterName, taskDefinition, ecsLoadBalancer, taskSubnets, taskSecurityGroups)
+            awsCommunicator.createEcsService(correlationId, userName, ecsClusterName, registeredTaskDefinition, ecsLoadBalancer, taskSubnets, taskSecurityGroups)
         } catch (e: Exception) {
             logger.error("Failed to create resources for user", e, "correlation_id" to correlationId, "user_name" to userName)
             // Pause to allow eventual consistency
@@ -133,7 +164,7 @@ class TaskDeploymentService {
         return logConfig
     }
 
-    private fun buildContainerDefinitions(userName: String, emrHostname: String, jupyterMemory: Int, jupyterCpu: Int, guacamolePort: Int, jupyterS3Bucket: String, kmsHome: String, kmsShared: String, gitRepo: String, pushHost: String, pushCron: String): Collection<ContainerDefinition> {
+    private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
 
@@ -158,32 +189,54 @@ class TaskDeploymentService {
         val hue = ContainerDefinition.builder()
                 .name("hue")
                 .image("$ecrEndpoint/aws-analytical-env/hue")
-                .cpu(jupyterCpu)
-                .memory(jupyterMemory)
+                .cpu(containerProperties.jupyterCpu)
+                .memory(containerProperties.jupyterMemory)
                 .essential(false)
                 .portMappings(PortMapping.builder().containerPort(8888).hostPort(8888).build())
-                .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared, "DISABLE_AUTH" to "true"))
-                .logConfiguration(buildLogConfiguration(userName, "hue"))
+                .environment(pairsToKeyValuePairs(
+                        "USER" to containerProperties.userName,
+                        "EMR_HOST_NAME" to containerProperties.emrHostname,
+                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
+                        "KMS_HOME" to containerProperties.kmsHome,
+                        "KMS_SHARED" to containerProperties.kmsShared,
+                        "DISABLE_AUTH" to "true"))
+                .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "hue"))
                 .build()
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss")
-                .cpu(jupyterCpu)
-                .memory(jupyterMemory)
+                .cpu(containerProperties.jupyterCpu)
+                .memory(containerProperties.jupyterMemory)
                 .essential(false)
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
-                .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared, "DISABLE_AUTH" to "true"))
-                .logConfiguration(buildLogConfiguration(userName, "rstudio-oss"))
+                .environment(pairsToKeyValuePairs(
+                        "USER" to containerProperties.userName,
+                        "EMR_HOST_NAME" to containerProperties.emrHostname,
+                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
+                        "KMS_HOME" to containerProperties.kmsHome,
+                        "KMS_SHARED" to containerProperties.kmsShared,
+                        "DISABLE_AUTH" to "true"))
+                .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
                 .build()
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
                 .image("$ecrEndpoint/aws-analytical-env/jupyterhub")
-                .cpu(jupyterCpu)
-                .memory(jupyterMemory)
+                .cpu(containerProperties.jupyterCpu)
+                .memory(containerProperties.jupyterMemory)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
-                .environment(pairsToKeyValuePairs("USER" to userName, "EMR_HOST_NAME" to emrHostname, "S3_BUCKET" to jupyterS3Bucket.substringAfterLast(":"), "KMS_HOME" to kmsHome, "KMS_SHARED" to kmsShared, "GIT_REPO" to gitRepo, "PUSH_HOST" to pushHost, "PUSH_CRON" to pushCron))
-                .logConfiguration(buildLogConfiguration(userName, "jupyterHub"))
+                .environment(pairsToKeyValuePairs(
+                        "USER" to containerProperties.userName,
+                        "EMR_HOST_NAME" to containerProperties.emrHostname,
+                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
+                        "KMS_HOME" to containerProperties.kmsHome,
+                        "KMS_SHARED" to containerProperties.kmsShared,
+                        "GIT_REPO" to containerProperties.gitRepo,
+                        "PUSH_HOST" to containerProperties.pushHost,
+                        "PUSH_CRON" to containerProperties.pushCron))
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "jupyterHub"))
                 .healthCheck(jupyterhubHealthCheck)
                 .build()
 
@@ -224,7 +277,7 @@ class TaskDeploymentService {
                                 "--connectivity-check-url=https://localhost:8000",
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")))
-                .logConfiguration(buildLogConfiguration(userName, "headless_chrome"))
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
                 .healthCheck(headlessChromeHealthCheck)
                 .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
                 .build()
@@ -246,7 +299,7 @@ class TaskDeploymentService {
                 .memory(128)
                 .essential(true)
                 .portMappings(PortMapping.builder().hostPort(4822).containerPort(4822).build())
-                .logConfiguration(buildLogConfiguration(userName, "guacd"))
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacd"))
                 .healthCheck(guacdHealthCheck)
                 .dependsOn(headlessChromeDependency)
                 .build()
@@ -264,13 +317,34 @@ class TaskDeploymentService {
                         "VALIDATE_ISSUER" to "true",
                         "ISSUER" to authService.issuerUrl,
                         "CLIENT_PARAMS" to "hostname=localhost,port=5900,disable-copy=true",
-                        "CLIENT_USERNAME" to userName.substring(0, userName.length - 3)))
-                .portMappings(PortMapping.builder().hostPort(guacamolePort).containerPort(guacamolePort).build())
-                .logConfiguration(buildLogConfiguration(userName, "guacamole"))
+                        "CLIENT_USERNAME" to containerProperties.userName.substring(0, containerProperties.userName.length - 3)))
+                .portMappings(PortMapping.builder().hostPort(containerProperties.guacamolePort).containerPort(containerProperties.guacamolePort).build())
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacamole"))
                 .dependsOn(jupyterhubContainerDependency, guacdContainerDependency)
                 .build()
 
-        return listOf(jupyterHub, headlessChrome, guacd, guacamole, rstudioOss, hue)
+        val s3fs = ContainerDefinition.builder()
+                .name("s3fs")
+                .image("$ecrEndpoint/aws-analytical-env/s3fs")
+                .cpu(64)
+                .memory(128)
+                .essential(true)
+                .environment(pairsToKeyValuePairs(
+                        "KMS_HOME" to containerProperties.kmsHome,
+                        "KMS_SHARED" to containerProperties.kmsShared,
+                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
+                        "USER" to containerProperties.userName
+                ))
+                .linuxParameters(
+                        LinuxParameters.builder()
+                                .capabilities(KernelCapabilities.builder().add("SYS_ADMIN").build())
+                                .devices(Device.builder().hostPath("/dev/fuse").build())
+                                .build())
+                .mountPoints(MountPoint.builder().containerPath("/mnt/s3fs:rshared").sourceVolume(containerProperties.s3fsVolumeName).build())
+                .logConfiguration(buildLogConfiguration(containerProperties.userName, "s3fs"))
+                .build()
+
+        return listOf(jupyterHub, headlessChrome, guacd, guacamole, rstudioOss, hue, s3fs)
     }
 
     private fun pairsToKeyValuePairs(vararg pairs: Pair<String, String>): Collection<KeyValuePair> {

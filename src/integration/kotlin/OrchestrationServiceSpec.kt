@@ -170,7 +170,7 @@ class OrchestrationServiceSpec {
         doReturn(Rule.builder().build())
                 .whenever(awsCommunicator).createAlbRoutingRule(any(), any(),any(),any())
         doReturn(TaskDefinition.builder().build())
-                .whenever(awsCommunicator).registerTaskDefinition(any(), anyString(), anyString(), anyString(), any(), any(), any())
+                .whenever(awsCommunicator).registerTaskDefinition(any(), any(), any())
         doReturn(Service.builder().build())
                 .whenever(awsCommunicator).createEcsService(anyString(),anyString(),anyString(), any(), any(), any(), any())
         createTable()
