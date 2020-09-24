@@ -213,9 +213,6 @@ class TaskDeploymentService {
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
-                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
-                        "KMS_HOME" to containerProperties.kmsHome,
-                        "KMS_SHARED" to containerProperties.kmsShared,
                         "DISABLE_AUTH" to "true"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
@@ -230,12 +227,10 @@ class TaskDeploymentService {
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
-                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
-                        "KMS_HOME" to containerProperties.kmsHome,
-                        "KMS_SHARED" to containerProperties.kmsShared,
                         "GIT_REPO" to containerProperties.gitRepo,
                         "PUSH_HOST" to containerProperties.pushHost,
                         "PUSH_CRON" to containerProperties.pushCron))
+                .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "jupyterHub"))
                 .healthCheck(jupyterhubHealthCheck)
                 .build()
