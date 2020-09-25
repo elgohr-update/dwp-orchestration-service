@@ -49,11 +49,43 @@ data "template_cloudinit_config" "ecs_config" {
   base64_encode = true
 
   part {
+    content_type = "text/cloud-config"
+
+    content = <<EOF
+write_files:
+  - encoding: b64
+    content: ${base64encode(local.cloudwatch_agent_config_file)}
+    owner: root:root
+    path: /etc/amazon/amazon-cloudwatch-agent/amazon-cloudwatch-agent.d/sysdig.json
+    permissions: '0644'
+  - encoding: b64
+    content: ${filebase64("${path.module}/audit/sysdig.service")}
+    owner: root:root
+    path: /etc/systemd/system/sysdig.service
+    permissions: '0644'
+  - encoding: b64
+    content: ${filebase64("${path.module}/audit/json.lua")}
+    owner: root:root
+    path: /usr/share/sysdig/chisels/json.lua
+    permissions: '0644'
+  - encoding: b64
+    content: ${filebase64("${path.module}/audit/spy_log.lua")}
+    owner: root:root
+    path: /usr/share/sysdig/chisels/spy_log.lua
+    permissions: '0644'
+EOF
+  }
+
+  part {
     content_type = "text/x-shellscript"
     content      = <<EOF
     #!/bin/bash
     sed -i '/^\[Service\]/a MountFlags=shared' /usr/lib/systemd/system/docker.service
     systemctl daemon-reload
+    systemctl enable sysdig
+    systemctl start sysdig
+    systemctl enable amazon-cloudwatch-agent
+    systemctl start amazon-cloudwatch-agent
 EOF
   }
 
@@ -119,4 +151,3 @@ resource "aws_launch_template" "user_host" {
     create_before_destroy = true
   }
 }
-

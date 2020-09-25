@@ -1,0 +1,16 @@
+[Unit]
+Description=sysdig Audit Service  
+After=docker.service
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/bin/bash -c '/usr/bin/sysdig -pc -c spy_log --unbuffered >> /var/log/sysdig.log &'
+Restart=always
+KillMode=process
+#StandardOutput=file:/var/log/sysdig-out.log # Not supported in this version of systemd
+#StandardError=file:/var/log/sysdig-err.log # Not supported in this version of systemd
+
+[Install]
+WantedBy=multi-user.target
