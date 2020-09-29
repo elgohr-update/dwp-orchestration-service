@@ -28,6 +28,11 @@ resource "aws_s3_bucket" "jupyter_storage" {
       }
     }
   }
+
+  logging {
+    target_bucket = var.logging_bucket
+    target_prefix = "S3Logs/${var.name_prefix}"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "jupyter_bucket" {
