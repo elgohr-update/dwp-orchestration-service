@@ -203,7 +203,7 @@ class OrchestrationServiceSpec {
         assertThat(awsCommunicator.getDynamoDeploymentEntry("existingtestusername123").hasItem())
         doReturn(true).whenever(activeUserTasks).contains("existingtestusername123")
         setupUser("existingtestusername123", existingUserTestJwt)
-        verify(taskDeploymentService, times(1)).runContainers("existingtestusername123", listOf("cg1", "cg2"), 256, 512, emptyList())
+        verify(taskDeploymentService, times(1)).runContainers("existingtestusername123", listOf("cg1", "cg2"), 256, 896, emptyList())
     }
 
     @Test

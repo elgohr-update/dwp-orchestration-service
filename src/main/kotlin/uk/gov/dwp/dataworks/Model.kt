@@ -12,7 +12,7 @@ import kotlin.reflect.full.declaredMemberProperties
 
 data class DeployRequest @JsonCreator constructor(
         val jupyterCpu: Int = 256,
-        val jupyterMemory: Int = 512,
+        val jupyterMemory: Int = 896,
         val additionalPermissions: List<String> = emptyList()
 )
 
@@ -55,6 +55,7 @@ data class UserTask(val correlationId: String,
 
 data class UserContainerProperties(
         val userName: String,
+        val cognitoGroups: List<String>,
         val emrHostname: String,
         val jupyterCpu: Int,
         val jupyterMemory: Int,

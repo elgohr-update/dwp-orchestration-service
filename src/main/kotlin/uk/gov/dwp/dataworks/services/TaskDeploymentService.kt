@@ -115,6 +115,7 @@ class TaskDeploymentService {
 
             val userContainerProperties = UserContainerProperties(
                     userName,
+                    cognitoGroups,
                     emrClusterHostname,
                     jupyterCpu,
                     jupyterMemory,
@@ -249,7 +250,7 @@ class TaskDeploymentService {
                 .name("headless_chrome")
                 .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
                 .cpu(512)
-                .memory(1024)
+                .memory(1792)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
                 .environment(pairsToKeyValuePairs(
@@ -303,7 +304,7 @@ class TaskDeploymentService {
                 .name("guacamole")
                 .image("$ecrEndpoint/aws-analytical-env/guacamole")
                 .cpu(256)
-                .memory(512)
+                .memory(896)
                 .essential(true)
                 .environment(pairsToKeyValuePairs(
                         "GUACD_HOSTNAME" to "localhost",
@@ -328,7 +329,8 @@ class TaskDeploymentService {
                         "KMS_HOME" to containerProperties.kmsHome,
                         "KMS_SHARED" to containerProperties.kmsShared,
                         "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
-                        "USER" to containerProperties.userName
+                        "USER" to containerProperties.userName,
+                        "TEAM" to containerProperties.cognitoGroups[0]
                 ))
                 .linuxParameters(
                         LinuxParameters.builder()
