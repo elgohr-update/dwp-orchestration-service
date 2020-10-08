@@ -63,10 +63,11 @@ resource "aws_ecs_task_definition" "td" {
       type           = lookup(proxy_configuration.value, "type", null)
     }
   }
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-td", Persistence  = "True", AutoShutdown = "False"})
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-td", Persistence = "True", AutoShutdown = "False" })
 }
 
 resource "aws_cloudwatch_log_group" "lamda_logs" {
   name              = var.log_configuration.options["awslogs-group"]
   retention_in_days = 180
+  tags              = merge(var.common_tags, { "Name" : "${var.name_prefix}-lambda-logs" })
 }

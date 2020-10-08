@@ -13,14 +13,7 @@ resource "aws_autoscaling_group" "user_host" {
     version = "$Latest"
   }
 
-  dynamic "tag" {
-    for_each = var.common_tags
-    content {
-      key                 = tag.key
-      value               = tag.value
-      propagate_at_launch = true
-    }
-  }
+  tags = local.autoscaling_tags
 
   lifecycle {
     create_before_destroy = true

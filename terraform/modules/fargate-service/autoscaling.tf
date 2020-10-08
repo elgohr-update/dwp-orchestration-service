@@ -12,6 +12,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
     ServiceName = aws_ecs_service.service.name
   }
   alarm_actions = [aws_appautoscaling_policy.scale_up_policy.arn]
+  tags          = merge(var.common_tags, { "Name" : "${var.name_prefix}-cpu-high-alarm" })
 }
 
 resource "aws_cloudwatch_metric_alarm" "cpu_low" {
@@ -28,6 +29,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
     ServiceName = aws_ecs_service.service.name
   }
   alarm_actions = [aws_appautoscaling_policy.scale_down_policy.arn]
+  tags          = merge(var.common_tags, { "Name" : "${var.name_prefix}-cpu-low-alarm" })
 }
 
 resource "aws_appautoscaling_policy" "scale_up_policy" {

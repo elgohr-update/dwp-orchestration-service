@@ -5,4 +5,12 @@ locals {
       cloudwatch_log_group = local.log_group
     }
   )
+  autoscaling_tags = [
+    for key, value in var.common_tags :
+    {
+      key                 = key
+      value               = value
+      propagate_at_launch = true
+    }
+  ]
 }

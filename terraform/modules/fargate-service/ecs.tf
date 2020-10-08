@@ -46,5 +46,5 @@ resource "aws_ecs_service" "service" {
     ignore_changes = [desired_count]
   }
 
-  tags = merge(var.common_tags, {Persistence  = "True", AutoShutdown = "False"})
+  tags = merge(var.common_tags, { Persistence = "True", AutoShutdown = "False" })
 }

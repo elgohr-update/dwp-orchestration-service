@@ -2,6 +2,7 @@ resource "aws_cloudwatch_event_rule" "fire_at_midnight" {
   name                = "fire_at_midnightr"
   description         = "Fires every day at 03:17am"
   schedule_expression = "cron(11 0 * * ? *)"
+  tags                = merge(var.common_tags, { "Name" : "${var.name_prefix}-midnight-trigger" })
 }
 
 resource "aws_cloudwatch_event_target" "cleanup_lambda_target" {
@@ -22,4 +23,5 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_cleanup_lambda" {
 resource "aws_cloudwatch_log_group" "cleanup_lambda_logs" {
   name              = var.name_prefix
   retention_in_days = 180
+  tags              = merge(var.common_tags, { "Name" : "${var.name_prefix}-cleanup-lambda-logs" })
 }

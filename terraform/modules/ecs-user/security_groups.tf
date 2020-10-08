@@ -1,6 +1,7 @@
 resource "aws_security_group" "user_host" {
   name   = var.name_prefix
   vpc_id = var.vpc.id
+  tags   = merge(var.common_tags, { "Name" : "${var.name_prefix}-user-host-sg" })
 }
 
 resource "aws_security_group_rule" "to_vpce" {

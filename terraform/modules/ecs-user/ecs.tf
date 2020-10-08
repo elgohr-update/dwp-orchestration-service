@@ -9,7 +9,7 @@ resource "aws_ecs_cluster" "user_host" {
     capacity_provider = aws_ecs_capacity_provider.user_host.name
     weight            = 100
   }
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}", Persistence  = "True", AutoShutdown = "False"})
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}", Persistence = "True", AutoShutdown = "False" })
 }
 
 resource "aws_ecs_capacity_provider" "user_host" {
@@ -27,4 +27,5 @@ resource "aws_ecs_capacity_provider" "user_host" {
 
   }
   depends_on = [aws_autoscaling_group.user_host]
+  tags       = merge(var.common_tags, { "Name" : "${var.name_prefix}-user-host-provider" })
 }
