@@ -24,6 +24,26 @@ resource "aws_security_group_rule" "vpce_from_host" {
   type                     = "ingress"
 }
 
+resource "aws_security_group_rule" "to_gh_proxy_vpce" {
+  description              = "Allow instances to connect to VPCE"
+  protocol                 = "tcp"
+  from_port                = 3128
+  to_port                  = 3128
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.github_proxy_vpce_sg_id
+  type                     = "egress"
+}
+
+resource "aws_security_group_rule" "gh_proxy_vpce_from_host" {
+  description              = "Accept VPCE traffic"
+  protocol                 = "tcp"
+  from_port                = 3128
+  to_port                  = 3128
+  security_group_id        = var.github_proxy_vpce_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "ingress"
+}
+
 resource "aws_security_group_rule" "https_to_s3" {
   description       = "Allow HTTPS to S3 endpoint"
   protocol          = "tcp"

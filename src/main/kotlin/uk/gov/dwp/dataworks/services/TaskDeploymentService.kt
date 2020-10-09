@@ -63,6 +63,7 @@ class TaskDeploymentService {
         val userS3Bucket = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
         val accountNumber = configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER)
         val gitRepo = configurationResolver.getStringConfig(ConfigKey.DATA_SCIENCE_GIT_REPO)
+        val githubProxyUrl = configurationResolver.getStringConfig(ConfigKey.GITHUB_PROXY_URL)
         val pushHost = configurationResolver.getStringConfig(ConfigKey.PUSH_HOST)
         val pushCron = configurationResolver.getStringConfig(ConfigKey.PUSH_CRON)
 
@@ -126,7 +127,8 @@ class TaskDeploymentService {
                     gitRepo,
                     pushHost,
                     pushCron,
-                    s3fsVolume.name()
+                    s3fsVolume.name(),
+                    githubProxyUrl
             )
 
             val containerDefinitions = buildContainerDefinitions(userContainerProperties)
@@ -169,6 +171,20 @@ class TaskDeploymentService {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
 
+        val noProxyList = listOf(
+            "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
+            "localhost",
+            "127.0.0.1"
+        ).joinToString(",")
+        val proxyEnvVariables = arrayOf(
+                "HTTP_PROXY" to containerProperties.githubProxyUrl,
+                "HTTPS_PROXY" to containerProperties.githubProxyUrl,
+                "NO_PROXY" to noProxyList,
+                "http_proxy" to containerProperties.githubProxyUrl,
+                "https_proxy" to containerProperties.githubProxyUrl,
+                "no_proxy" to noProxyList
+        )
+
         val jupyterhubContainerDependency = ContainerDependency.builder()
                 .containerName("jupyterHub")
                 .condition(ContainerCondition.HEALTHY)
@@ -182,7 +198,7 @@ class TaskDeploymentService {
                 .condition(ContainerCondition.START)
                 .build()
         val jupyterhubHealthCheck = HealthCheck.builder()
-                .command("CMD", "wget", "-O-", "-S", "--no-check-certificate", "-q", "https://localhost:8000/hub/health")
+                .command("CMD", "curl", "-k", "-o", "/dev/null", "https://localhost:8000/hub/health")
                 .interval(12)
                 .timeout(12)
                 .startPeriod(20)
@@ -214,7 +230,9 @@ class TaskDeploymentService {
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
-                        "DISABLE_AUTH" to "true"))
+                        "DISABLE_AUTH" to "true",
+                        *proxyEnvVariables
+                ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
                 .build()
@@ -230,7 +248,9 @@ class TaskDeploymentService {
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
                         "GIT_REPO" to containerProperties.gitRepo,
                         "PUSH_HOST" to containerProperties.pushHost,
-                        "PUSH_CRON" to containerProperties.pushCron))
+                        "PUSH_CRON" to containerProperties.pushCron,
+                        *proxyEnvVariables
+                ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "jupyterHub"))
                 .healthCheck(jupyterhubHealthCheck)
@@ -267,12 +287,13 @@ class TaskDeploymentService {
                                 "--disable-features=TranslateUI",
                                 "--disk-cache-dir=/dev/null",
                                 "--test-type https://localhost:8000 https://localhost:7000",
-                                "--host-rules=\"MAP * 127.0.0.1, MAP * localhost\"",
+                                "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk\"",
                                 "--ignore-certificate-errors",
                                 "--enable-auto-reload",
                                 "--connectivity-check-url=https://localhost:8000",
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
-                        "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x")))
+                        "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
+                        *proxyEnvVariables))
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
                 .healthCheck(headlessChromeHealthCheck)
                 .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)

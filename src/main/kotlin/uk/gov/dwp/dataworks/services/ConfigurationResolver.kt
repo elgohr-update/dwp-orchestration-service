@@ -74,5 +74,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     TAGS("TAGS", false),
     DATA_SCIENCE_GIT_REPO("orchestrationService.data_science_git_repo", false),
     PUSH_HOST("orchestrationService.push_gateway_host", false),
-    PUSH_CRON("orchestrationService.push_gateway_cron", false)
+    PUSH_CRON("orchestrationService.push_gateway_cron", false),
+    GITHUB_PROXY_URL("orchestrationService.github_proxy_url", false)
 }

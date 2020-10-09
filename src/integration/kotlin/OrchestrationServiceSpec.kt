@@ -67,7 +67,8 @@ import java.net.URI
             "TAGS={\"Name\":\"TaskName\", \"Fruit\": \"Cherry\", \"Colour\":\"Red\"}",
             "orchestrationService.data_science_git_repo=codecommit_repo",
             "orchestrationService.push_gateway_host=testlb",
-            "orchestrationService.push_gateway_cron=*/5 * * * *"
+            "orchestrationService.push_gateway_cron=*/5 * * * *",
+            "orchestrationService.github_proxy_url=proxy.tld:3128"
         ],
         controllers = [
             ConnectionController::class,

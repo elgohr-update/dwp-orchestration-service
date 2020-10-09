@@ -69,3 +69,7 @@ variable pushgateway_port {
   description = "Port that the Pushgateway listens on "
   default     = 9091
 }
+
+variable github_proxy_vpce_sg_id {
+  type = string
+}
