@@ -173,6 +173,8 @@ class TaskDeploymentService {
 
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
+            ".${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.compute.internal",
+            ".dataworks.dwp.gov.uk",
             "localhost",
             "127.0.0.1"
         ).joinToString(",")
