@@ -73,3 +73,9 @@ variable pushgateway_port {
 variable github_proxy_vpce_sg_id {
   type = string
 }
+
+variable hiveserver2_port {
+  type        = string
+  description = "Port that the Hive Server listens on"
+  default     = 10000
+}

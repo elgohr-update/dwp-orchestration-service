@@ -113,3 +113,24 @@ resource "aws_security_group_rule" "egress_host_to_pushgw" {
   source_security_group_id = var.pushgateway_sg_id
   type                     = "egress"
 }
+
+resource "aws_security_group_rule" "egress_host_to_emr_hive" {
+  description              = "Allow host TCP from EMR Hive"
+  protocol                 = "tcp"
+  from_port                = var.hiveserver2_port
+  to_port                  = var.hiveserver2_port
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.emr_sg_id
+  type                     = "egress"
+}
+
+resource "aws_security_group_rule" "ingress_emr_hive_from_host" {
+  description              = "Allow host TCP to EMR Hive"
+  protocol                 = "tcp"
+  from_port                = var.hiveserver2_port
+  to_port                  = var.hiveserver2_port
+  security_group_id        = var.emr_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "ingress"
+}
+
