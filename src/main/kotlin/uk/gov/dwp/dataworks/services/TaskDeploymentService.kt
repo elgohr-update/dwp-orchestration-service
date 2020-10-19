@@ -187,24 +187,36 @@ class TaskDeploymentService {
                 "no_proxy" to noProxyList
         )
 
+        val guacdContainerDependency = ContainerDependency.builder()
+                .containerName("guacd")
+                .condition(ContainerCondition.HEALTHY)
+                .build()
+
         val jupyterhubContainerDependency = ContainerDependency.builder()
                 .containerName("jupyterHub")
                 .condition(ContainerCondition.HEALTHY)
                 .build()
+
         val rstudioOssContainerDependency = ContainerDependency.builder()
                 .containerName("rstudio-oss")
                 .condition(ContainerCondition.START)
                 .build()
+
         val hueContainerDependency = ContainerDependency.builder()
                 .containerName("hue")
                 .condition(ContainerCondition.START)
                 .build()
-        val jupyterhubHealthCheck = HealthCheck.builder()
-                .command("CMD", "curl", "-k", "-o", "/dev/null", "https://localhost:8000/hub/health")
-                .interval(12)
-                .timeout(12)
-                .startPeriod(20)
+
+        val s3fsContainerDependency = ContainerDependency.builder()
+                .containerName("s3fs")
+                .condition(ContainerCondition.HEALTHY)
                 .build()
+
+        val headlessChromeDependency = ContainerDependency.builder()
+                .containerName("headless_chrome")
+                .condition(ContainerCondition.HEALTHY)
+                .build()
+
         val hue = ContainerDefinition.builder()
                 .name("hue")
                 .image("$ecrEndpoint/aws-analytical-env/hue")
@@ -221,7 +233,9 @@ class TaskDeploymentService {
                         "DISABLE_AUTH" to "true"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "hue"))
+                .dependsOn(s3fsContainerDependency)
                 .build()
+
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss")
@@ -237,7 +251,16 @@ class TaskDeploymentService {
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
+                .dependsOn(s3fsContainerDependency)
                 .build()
+
+        val jupyterhubHealthCheck = HealthCheck.builder()
+                .command("CMD", "curl", "-k", "-o", "/dev/null", "https://localhost:8000/hub/health")
+                .interval(12)
+                .timeout(12)
+                .startPeriod(20)
+                .build()
+
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
                 .image("$ecrEndpoint/aws-analytical-env/jupyterhub")
@@ -256,18 +279,16 @@ class TaskDeploymentService {
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "jupyterHub"))
                 .healthCheck(jupyterhubHealthCheck)
+                .dependsOn(s3fsContainerDependency)
                 .build()
 
-        val headlessChromeDependency = ContainerDependency.builder()
-                .containerName("headless_chrome")
-                .condition(ContainerCondition.HEALTHY)
-                .build()
         val headlessChromeHealthCheck = HealthCheck.builder()
                 .command("CMD-SHELL", "supervisorctl", "status", "|", "awk", "'BEGIN {c=0} $2 == \"RUNNING\" {c++} END {exit c != 3}'")
                 .interval(12)
                 .timeout(12)
                 .startPeriod(20)
                 .build()
+
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")
                 .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
@@ -301,16 +322,13 @@ class TaskDeploymentService {
                 .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
                 .build()
 
-        val guacdContainerDependency = ContainerDependency.builder()
-                .containerName("guacd")
-                .condition(ContainerCondition.HEALTHY)
-                .build()
         val guacdHealthCheck = HealthCheck.builder()
                 .command("CMD", "nc", "-z", "127.0.0.1", "4822")
                 .interval(12)
                 .timeout(12)
                 .startPeriod(20)
                 .build()
+
         val guacd = ContainerDefinition.builder()
                 .name("guacd")
                 .image("$ecrEndpoint/aws-analytical-env/guacd")
@@ -342,6 +360,12 @@ class TaskDeploymentService {
                 .dependsOn(jupyterhubContainerDependency, guacdContainerDependency)
                 .build()
 
+        val s3fsHealthCheck = HealthCheck.builder()
+                .command("CMD", "pgrep", "tail")
+                .interval(30)
+                .timeout(5)
+                .build()
+
         val s3fs = ContainerDefinition.builder()
                 .name("s3fs")
                 .image("$ecrEndpoint/aws-analytical-env/s3fs")
@@ -361,6 +385,7 @@ class TaskDeploymentService {
                                 .devices(Device.builder().hostPath("/dev/fuse").build())
                                 .build())
                 .mountPoints(MountPoint.builder().containerPath("/mnt/s3fs:rshared").sourceVolume(containerProperties.s3fsVolumeName).build())
+                .healthCheck(s3fsHealthCheck)
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "s3fs"))
                 .build()
 
