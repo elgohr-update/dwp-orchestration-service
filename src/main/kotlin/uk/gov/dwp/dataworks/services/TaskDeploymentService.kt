@@ -289,13 +289,16 @@ class TaskDeploymentService {
                 .startPeriod(20)
                 .build()
 
+        val linuxParameters: LinuxParameters = LinuxParameters.builder().sharedMemorySize(2048).build()
+
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")
                 .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
                 .cpu(512)
-                .memory(1792)
+                .memory(2048)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
+                .linuxParameters(linuxParameters)
                 .environment(pairsToKeyValuePairs(
                         "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -noclipboard",
                         "CHROME_OPTS" to arrayOf(
