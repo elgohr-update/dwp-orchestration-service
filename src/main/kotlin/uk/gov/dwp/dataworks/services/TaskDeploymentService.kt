@@ -170,6 +170,7 @@ class TaskDeploymentService {
     private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
+        val tabs = mutableMapOf<Int,String>();
 
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
@@ -236,6 +237,8 @@ class TaskDeploymentService {
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
+        tabs.put(30, "https://localhost:8888")
+
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss")
@@ -253,6 +256,8 @@ class TaskDeploymentService {
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
                 .dependsOn(s3fsContainerDependency)
                 .build()
+
+        tabs.put(20, "https://localhost:7000")
 
         val jupyterhubHealthCheck = HealthCheck.builder()
                 .command("CMD", "curl", "-k", "-o", "/dev/null", "https://localhost:8000/hub/health")
@@ -282,6 +287,8 @@ class TaskDeploymentService {
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
+        tabs.put(10, "https://localhost:8000")
+
         val headlessChromeHealthCheck = HealthCheck.builder()
                 .command("CMD-SHELL", "supervisorctl", "status", "|", "awk", "'BEGIN {c=0} $2 == \"RUNNING\" {c++} END {exit c != 3}'")
                 .interval(12)
@@ -290,6 +297,8 @@ class TaskDeploymentService {
                 .build()
 
         val linuxParameters: LinuxParameters = LinuxParameters.builder().sharedMemorySize(2048).build()
+
+        tabs.put(40,configurationResolver.getIfEmpty("https://github.com", ConfigKey.GITHUB_URL))
 
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")
@@ -312,7 +321,7 @@ class TaskDeploymentService {
                                 "--disable-infobars",
                                 "--disable-features=TranslateUI",
                                 "--disk-cache-dir=/dev/null",
-                                "--test-type https://localhost:8000 https://localhost:7000",
+                                "--test-type ${tabs.toSortedMap().values.joinToString(" ")}",
                                 "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk\"",
                                 "--ignore-certificate-errors",
                                 "--enable-auto-reload",

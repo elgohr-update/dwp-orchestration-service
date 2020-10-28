@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.9.RELEASE"
-	kotlin("jvm") version "1.3.61"
-	kotlin("plugin.spring") version "1.3.61"
+	kotlin("jvm") version "1.4.10"
+	kotlin("plugin.spring") version "1.4.10"
 }
 group = "uk.gov.dwp.dataworks"
 repositories {
@@ -51,8 +51,12 @@ dependencies {
 	implementation ("software.amazon.awssdk:ecs")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.batch:spring-batch-test")
-	testImplementation("io.kotlintest:kotlintest-runner-junit5:3.3.3")
+	testImplementation( "io.kotest:kotest-runner-junit5:4.3.0") // for kotest framework
+	testImplementation( "io.kotest:kotest-assertions-core:4.3.0") // for kotest core jvm assertions
+	testImplementation( "io.kotest:kotest-property:4.3.0") // for kotest property test
+    testImplementation( "io.kotest:kotest-extensions-spring:4.3.0")
 	testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
+	testImplementation("org.mockito:mockito-inline:2.23.0")
 	testImplementation( "au.com.dius:pact-jvm-provider-spring_2.12:3.6.15")
 	testImplementation("cloud.localstack:localstack-utils:0.2.1")
 }

@@ -1,52 +1,67 @@
 package uk.gov.dwp.dataworks.services
 
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.Spy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.boot.test.mock.mockito.SpyBean
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit4.SpringRunner
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeRulesResponse
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.Rule
+import software.amazon.awssdk.services.ecs.model.ContainerDefinition
+import software.amazon.awssdk.services.ecs.model.TaskDefinition
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.Listener
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroup
+import software.amazon.awssdk.services.iam.model.Policy
+import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.Application
-import uk.gov.dwp.dataworks.JWTObject
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
-import uk.gov.dwp.dataworks.aws.AwsParsing
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 
 @RunWith(SpringRunner::class)
-@ContextConfiguration(classes = [Application::class])
-@SpringBootTest(properties = ["orchestrationService.cognito_user_pool_id=id", "orchestrationService.jupyterhub_bucket_arn=testArn", "orchestrationService.aws_account_number=1234", "orchestrationService.aws_region=eu-west-2"])
+@ContextConfiguration(classes = [Application::class, TaskDeploymentServiceTest.AwsCommunicatorConfig::class])
+@SpringBootTest(properties = ["orchestrationService.cognito_user_pool_id=pool_1",
+                              "orchestrationService.aws_account_number=123456789",
+                              "orchestrationService.aws_region=eu-west-2",
+                              "orchestrationService.user_container_port=1234",
+                              "orchestrationService.load_balancer_port=1818",
+                              "orchestrationService.load_balancer_name=lbName",
+                              "orchestrationService.user_task_subnets=testSubnets",
+                              "orchestrationService.user_task_execution_role_arn=taskExecutionARN",
+                              "orchestrationService.user_task_security_groups=testSgs",
+                              "orchestrationService.user_container_url=www.com",
+                              "orchestrationService.emr_cluster_hostname=test_hostname",
+                              "orchestrationService.ecs_cluster_name=test_cluster",
+                              "orchestrationService.container_log_group=testLog",
+                              "orchestrationService.data_science_git_repo=codecommitted",
+                              "orchestrationService.ecr_endpoint=endpoint",
+                              "orchestrationService.debug=false",
+                              "orchestrationService.jupyterhub_bucket_arn=testArn",
+                              "orchestrationService.push_gateway_host=testlb",
+                              "orchestrationService.push_gateway_cron=*/5 * * * *",
+                              "orchestrationService.github_proxy_url=proxy.tld:3128",
+                              "orchestrationService.github_url=https://github.com",
+                              "TAGS={}",
+                              "spring.main.allow-bean-definition-overriding=true"])
 class TaskDeploymentServiceTest {
+
     @Autowired
-    private lateinit var taskDeploymentService: TaskDeploymentService
-
-    @MockBean
     private lateinit var awsCommunicator: AwsCommunicator
-
-    @MockBean
-    private lateinit var activeUserTasks: ActiveUserTasks
 
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver
 
+    @Autowired
+    private lateinit var taskDeploymentService: TaskDeploymentService
+
     @Before
     fun setupMocks() {
-        whenever(awsCommunicator.getKmsKeyArn(anyString())).doAnswer {
+        whenever(awsCommunicator.getKmsKeyArn(any())).doAnswer {
             val alias = it.getArgument<String>(0).split("/").last()
             "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-$alias"
         }
@@ -72,5 +87,78 @@ class TaskDeploymentServiceTest {
                         "testArn/*",
                         "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUsername-home"),
                 "jupyters3list" to listOf("testArn")))
+    }
+
+    @Test
+    fun `Task definition has tablist to open`() {
+        taskDeploymentService.runContainers("username", listOf("team"), 100, 200, emptyList())
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
+        val def = captor.firstValue
+        assertThat(def).isNotNull
+        val chromeEnvs = def.containerDefinitions()
+                .first { x : ContainerDefinition -> x.name() == "headless_chrome" }
+                .environment()
+        assertThat(chromeEnvs.first { k -> k.name() == "CHROME_OPTS" }
+                .value()).contains(" https://localhost:8000 ",
+                                   " https://localhost:7000 ",
+                                   " https://localhost:8888 ",
+                                   " https://github.com ")
+
+    }
+
+    @Configuration
+    class AwsCommunicatorConfig {
+
+        @Bean
+        fun authService() : AuthenticationService {
+            return mock<AuthenticationService> {
+                on { userNameFromJwt(any()) }.thenReturn("testUser")
+            }
+        }
+        @Bean
+        @Primary
+        fun awsCommunicator(lb : LoadBalancer, l : Listener, tg : TargetGroup, p : Policy, r : Role): AwsCommunicator {
+            return mock<AwsCommunicator>{
+                on { getLoadBalancerByName(any())}.thenReturn(lb)
+                on { getAlbListenerByPort(any(), any())}.thenReturn(l)
+                on { createTargetGroup(any(), any(), any(), any(), eq(TargetTypeEnum.IP))}.thenReturn(tg)
+                on { createIamPolicy(any(), any(), any(), any())}.thenReturn(p)
+                on { createIamRole(any(), any(), any())}.thenReturn(r)
+            }
+        }
+
+        @Bean
+        fun loadBalancer(): LoadBalancer {
+            return mock<LoadBalancer> {
+                on { loadBalancerName() }.thenReturn("loadBalancerName")
+                on { loadBalancerArn() }.thenReturn( "loadBalancerARN")
+                on { vpcId() }.thenReturn("vpcId")
+            }
+        }
+
+        @Bean
+        fun listener() : Listener {
+            return mock<Listener> {
+                on { listenerArn() }.thenReturn("listenerARN")
+            }
+        }
+
+        @Bean
+        fun targetGroup() : TargetGroup {
+            return mock<TargetGroup> {
+                on { targetGroupArn() }.thenReturn("targetGroupARN")
+            }
+        }
+
+        @Bean
+        fun policy() : Policy {
+            return mock<Policy>{}
+        }
+
+        @Bean
+        fun role() : Role {
+            return mock<Role>{}
+        }
     }
 }

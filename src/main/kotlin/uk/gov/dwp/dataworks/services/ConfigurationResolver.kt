@@ -27,7 +27,7 @@ class ConfigurationResolver {
         }
     }
 
-    final fun getListConfig(configKey: ConfigKey): List<String> {
+    fun getListConfig(configKey: ConfigKey): List<String> {
         return listConfigs.computeIfAbsent(configKey) {
             val sysConfig = env.getProperty(configKey.key) ?: throw SystemArgumentException("No value found for ${configKey.key}")
             sysConfig.split(",").toList()
@@ -75,5 +75,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     DATA_SCIENCE_GIT_REPO("orchestrationService.data_science_git_repo", false),
     PUSH_HOST("orchestrationService.push_gateway_host", false),
     PUSH_CRON("orchestrationService.push_gateway_cron", false),
-    GITHUB_PROXY_URL("orchestrationService.github_proxy_url", false)
+    GITHUB_PROXY_URL("orchestrationService.github_proxy_url", false),
+    GITHUB_URL( "orchestrationService.github_url", false)
 }
