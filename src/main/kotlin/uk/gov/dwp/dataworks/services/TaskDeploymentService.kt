@@ -322,7 +322,7 @@ class TaskDeploymentService {
                                 "--disable-features=TranslateUI",
                                 "--disk-cache-dir=/dev/null",
                                 "--test-type ${tabs.toSortedMap().values.joinToString(" ")}",
-                                "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk\"",
+                                "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk\"",
                                 "--ignore-certificate-errors",
                                 "--enable-auto-reload",
                                 "--connectivity-check-url=https://localhost:8000",
