@@ -49,7 +49,7 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(userName: String, cognitoGroups: List<String>, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun runContainers(cognitoToken: String, userName: String, cognitoGroups: List<String>, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
         val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
@@ -115,6 +115,7 @@ class TaskDeploymentService {
                     .build()
 
             val userContainerProperties = UserContainerProperties(
+                    cognitoToken,
                     userName,
                     cognitoGroups,
                     emrClusterHostname,
@@ -299,6 +300,8 @@ class TaskDeploymentService {
         val linuxParameters: LinuxParameters = LinuxParameters.builder().sharedMemorySize(2048).build()
 
         tabs.put(40,configurationResolver.getStringConfig(ConfigKey.GITHUB_URL))
+        
+        tabs.put(50, "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken)
 
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")

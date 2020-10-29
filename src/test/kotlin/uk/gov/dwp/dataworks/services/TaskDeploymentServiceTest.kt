@@ -91,7 +91,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has tablist to open`() {
-        taskDeploymentService.runContainers("username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -103,7 +103,8 @@ class TaskDeploymentServiceTest {
                 .value()).contains(" https://localhost:8000 ",
                                    " https://localhost:7000 ",
                                    " https://localhost:8888 ",
-                                   " https://github.com ")
+                                   " https://github.com ",
+                                   " https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde ")
 
     }
 

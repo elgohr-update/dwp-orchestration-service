@@ -54,6 +54,7 @@ data class UserTask(val correlationId: String,
 }
 
 data class UserContainerProperties(
+        val cognitoToken: String,
         val userName: String,
         val cognitoGroups: List<String>,
         val emrHostname: String,
