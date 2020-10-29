@@ -298,7 +298,7 @@ class TaskDeploymentService {
 
         val linuxParameters: LinuxParameters = LinuxParameters.builder().sharedMemorySize(2048).build()
 
-        tabs.put(40,configurationResolver.getIfEmpty("https://github.com", ConfigKey.GITHUB_URL))
+        tabs.put(40,configurationResolver.getStringConfig(ConfigKey.GITHUB_URL))
 
         val headlessChrome = ContainerDefinition.builder()
                 .name("headless_chrome")
