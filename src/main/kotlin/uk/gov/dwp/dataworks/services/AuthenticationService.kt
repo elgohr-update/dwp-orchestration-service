@@ -5,7 +5,6 @@ import com.auth0.jwk.JwkProvider
 import com.auth0.jwk.UrlJwkProvider
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.auth0.jwt.interfaces.DecodedJWT
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -30,6 +29,8 @@ class AuthenticationService {
 
     @Autowired
     private lateinit var configurationResolver: ConfigurationResolver;
+    @Autowired
+    private lateinit var jwtParsingService: JwtParsingService
 
     internal lateinit var jwkProvider: JwkProvider
     internal lateinit var jwkProviderUrl: URL
@@ -45,8 +46,8 @@ class AuthenticationService {
     }
 
     fun validate(jwtToken: String): JWTObject {
-        val userJwt = JWT.decode(jwtToken)
-        val jwk = jwkProvider.get(userJwt.keyId)
+        val parsedToken = jwtParsingService.parseToken(jwtToken)
+        val jwk = jwkProvider.get(parsedToken.decodedJWT.keyId)
         val publicKey = jwk.publicKey as? RSAPublicKey ?: throw Exception("Invalid key type")
         val algorithm = when (jwk.algorithm) {
             "RS256" -> Algorithm.RSA256(publicKey, null)
@@ -56,42 +57,13 @@ class AuthenticationService {
         val jwt = JWT.require(algorithm)
                 .withIssuer(issuerUrl)
                 .build()
-                .verify(userJwt)
+                .verify(parsedToken.decodedJWT)
 
         return JWTObject(
                 jwt,
-                userNameFromJwt(userJwt),
-                groupsFromJwt(userJwt)
+                parsedToken.username,
+                parsedToken.cognitoGroups
         )
-    }
-
-    /**
-     * Helper method to extract the Cognito username from a JWT Payload.
-     */
-    fun userNameFromJwt(jwt: DecodedJWT): String {
-        val username = jwt.getClaim("preferred_username").asString()
-                ?: jwt.getClaim("cognito:username").asString()
-                ?: jwt.getClaim("username").asString()
-                ?: throw IllegalArgumentException("No username found in JWT token")
-
-        val sub = jwt.getClaim("sub").asString()
-
-        val suffix = sub.subSequence(0,3)
-        // Try and differentiate same usernames by adding
-        // parts of the sub. (can't use full sub since
-        // TargetGroupNames, IAMRoleNames etc are limited to
-        // 32 chars (which is the size of sub!).
-
-        return username + suffix
-    }
-
-    /**
-     * Helper method to extract groups from a JWT Payload.
-     */
-    fun groupsFromJwt(jwt: DecodedJWT): List<String> {
-        val groups = jwt.getClaim("cognito:groups").asList(String::class.java)
-                ?: throw IllegalArgumentException("No cognito groups found in JWT token")
-        return groups
     }
 
     fun getB64KeyStoreData(): String {

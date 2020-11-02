@@ -2,9 +2,10 @@ package uk.gov.dwp.dataworks.controllers
 
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +26,8 @@ import uk.gov.dwp.dataworks.services.ConfigKey
 import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import uk.gov.dwp.dataworks.services.TaskDeploymentService
 import uk.gov.dwp.dataworks.services.TaskDestroyService
+import uk.gov.dwp.dataworks.services.JwtParsingService
+import uk.gov.dwp.dataworks.services.UserValidationService
 
 @RunWith(SpringRunner::class)
 @WebMvcTest(ConnectionController::class, ConfigurationResolver::class)
@@ -40,6 +43,10 @@ class ConnectionControllerTest {
     private lateinit var taskDestroyService: TaskDestroyService
     @MockBean
     private lateinit var activeUserTasks: ActiveUserTasks
+    @MockBean
+    private lateinit var jwtParsingService: JwtParsingService
+    @MockBean
+    private lateinit var userValidationService: UserValidationService
 
     @Before
     fun setup() {
@@ -135,6 +142,24 @@ class ConnectionControllerTest {
         mvc.perform(post("/cleanup")
                 .header("content-type", "application/json")
                 .content("{\"activeUsers\": [\"testuser1\", \"testuser2\"]}"))
+                .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `404 returned when calling verify-user endpoint with invalid jwt`(){
+        whenever(userValidationService.checkJwtForAttributes(any())).doReturn(false)
+        mvc.perform(post("/verify-user")
+                .header("content-type", "application/json")
+                .header("Authorisation", "testBadToken"))
+                .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `200 returned when calling verify-user endpoint with valid jwt`(){
+        whenever(userValidationService.checkJwtForAttributes(any())).doReturn(true)
+        mvc.perform(post("/verify-user")
+                .header("content-type", "application/json")
+                .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)
     }
 }

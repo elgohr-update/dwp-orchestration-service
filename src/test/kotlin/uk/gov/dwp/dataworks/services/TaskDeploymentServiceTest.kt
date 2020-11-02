@@ -112,11 +112,17 @@ class TaskDeploymentServiceTest {
     class AwsCommunicatorConfig {
 
         @Bean
-        fun authService() : AuthenticationService {
-            return mock<AuthenticationService> {
-                on { userNameFromJwt(any()) }.thenReturn("testUser")
+        fun jwtParsingService() : JwtParsingService {
+            return mock<JwtParsingService> {
+                on { getUsernameFromJwt(any()) }.thenReturn("testUser")
             }
         }
+
+        @Bean
+        fun authService() : AuthenticationService {
+            return mock<AuthenticationService>{}
+        }
+
         @Bean
         @Primary
         fun awsCommunicator(lb : LoadBalancer, l : Listener, tg : TargetGroup, p : Policy, r : Role): AwsCommunicator {

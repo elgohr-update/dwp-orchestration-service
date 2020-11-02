@@ -46,6 +46,7 @@ import software.amazon.awssdk.services.iam.model.NoSuchEntityException
 import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
+import software.amazon.awssdk.services.kms.model.NotFoundException
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
 import uk.gov.dwp.dataworks.MultipleLoadBalancersMatchedException
 import uk.gov.dwp.dataworks.NetworkConfigurationMissingException
@@ -524,5 +525,18 @@ class AwsCommunicator {
         return awsClients.kmsClient
                 .describeKey(DescribeKeyRequest.builder().keyId(keyAlias).build())
                 .keyMetadata().arn()
+    }
+
+    /**
+     * Checks if the key aliased by [keyAlias] exists and is enabled - returns true or false
+     */
+    fun checkForExistingEnabledKey(keyAlias: String): Boolean {
+        try {
+            return awsClients.kmsClient
+                    .describeKey(DescribeKeyRequest.builder().keyId(keyAlias).build())
+                    .keyMetadata().enabled()
+        } catch (e: NotFoundException){
+            return false
+        }
     }
 }

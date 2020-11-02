@@ -54,7 +54,7 @@ class FrontEndServicePactProviderTest {
     @State("I am awaiting a connection")
     fun `a request for a tooling environment with valid token`() {
         val decodedJWT : DecodedJWT = mock()
-        val goodJWT = JWTObject(userName = "validUser", cognitoGroup = emptyList(), verifiedJWT = decodedJWT )
+        val goodJWT = JWTObject(username = "validUser", cognitoGroups = emptyList(), decodedJWT = decodedJWT )
         whenever(authServiceMock.validate(anyString())).thenReturn(goodJWT)
     }
 
