@@ -333,6 +333,7 @@ class TaskDeploymentService {
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
                         *proxyEnvVariables))
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
+                .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .healthCheck(headlessChromeHealthCheck)
                 .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
                 .build()
