@@ -18,12 +18,17 @@ class UserValidationService {
     private lateinit var jwtParsingService: JwtParsingService
 
     fun checkJwtForAttributes(jwt: String): Boolean {
-        val jwtObject= jwtParsingService.parseToken(jwt)
-        return checkForGroupKms(jwtObject.cognitoGroups) && awsCommunicator.checkForExistingEnabledKey("${jwtObject.username}-home")
+        try {
+            val jwtObject = jwtParsingService.parseToken(jwt)
+            return checkForGroupKms(jwtObject.cognitoGroups) && awsCommunicator.checkForExistingEnabledKey("${jwtObject.username}-home")
+        } catch (e: IllegalArgumentException){
+            logger.error("No cognito groups found in JWT token")
+            return false
+        }
     }
 
     fun checkForGroupKms(cognitoGroups: List<String>): Boolean {
-        if (cognitoGroups.size > 0) return awsCommunicator.checkForExistingEnabledKey("${cognitoGroups.first()}-shared")
+        if (cognitoGroups.isNotEmpty()) return awsCommunicator.checkForExistingEnabledKey("${cognitoGroups.first()}-shared")
             return false
     }
 }

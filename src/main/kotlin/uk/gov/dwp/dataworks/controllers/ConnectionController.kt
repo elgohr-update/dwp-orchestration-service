@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import uk.gov.dwp.dataworks.AttributesNotFoundException
 import uk.gov.dwp.dataworks.CleanupRequest
 import uk.gov.dwp.dataworks.DeployRequest
 import uk.gov.dwp.dataworks.ForbiddenException
@@ -52,15 +51,15 @@ class ConnectionController {
 
 
     @Operation(summary = "Checks JWT for necessary attributes",
-            description = "Returns 200 or 404, depending on user attributes present")
+            description = "Returns 200 or 204, depending on user attributes present")
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "User attributes present"),
-        ApiResponse(responseCode = "404", description = "User attribute(s) missing")
+        ApiResponse(responseCode = "204", description = "User attribute(s) missing")
     ])
     @PostMapping("/verify-user")
-    fun verifyUser(@RequestHeader("Authorisation") token: String): ResponseEntity<HttpStatus> {
+    fun verifyUser(@RequestHeader("Authorisation") token: String): ResponseEntity<Nothing> {
         if(userValidationService.checkJwtForAttributes(token)) return ResponseEntity(HttpStatus.OK)
-        else throw AttributesNotFoundException("User attribute(s) not found in JWT")
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null)
     }
 
     @Operation(summary = "Connect to Analytical Environment",

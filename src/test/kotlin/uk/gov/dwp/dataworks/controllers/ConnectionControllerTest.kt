@@ -146,12 +146,12 @@ class ConnectionControllerTest {
     }
 
     @Test
-    fun `404 returned when calling verify-user endpoint with invalid jwt`(){
+    fun `204 returned when calling verify-user endpoint with invalid jwt`(){
         whenever(userValidationService.checkJwtForAttributes(any())).doReturn(false)
         mvc.perform(post("/verify-user")
                 .header("content-type", "application/json")
                 .header("Authorisation", "testBadToken"))
-                .andExpect(status().isNotFound)
+                .andExpect(status().isNoContent)
     }
 
     @Test

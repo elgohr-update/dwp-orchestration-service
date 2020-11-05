@@ -533,9 +533,10 @@ class AwsCommunicator {
     fun checkForExistingEnabledKey(keyAlias: String): Boolean {
         try {
             return awsClients.kmsClient
-                    .describeKey(DescribeKeyRequest.builder().keyId(keyAlias).build())
+                    .describeKey(DescribeKeyRequest.builder().keyId("alias/${keyAlias}").build())
                     .keyMetadata().enabled()
         } catch (e: NotFoundException){
+            logger.error("KMS key not found: ${keyAlias}")
             return false
         }
     }
