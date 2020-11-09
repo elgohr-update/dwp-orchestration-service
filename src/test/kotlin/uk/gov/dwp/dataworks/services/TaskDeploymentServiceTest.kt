@@ -108,6 +108,20 @@ class TaskDeploymentServiceTest {
 
     }
 
+    @Test
+    fun `Task definition has githubUrl to open for Jupyter`() {
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
+        val def = captor.firstValue
+        assertThat(def).isNotNull
+        val jupyterEnvs = def.containerDefinitions()
+                .first { x : ContainerDefinition -> x.name() == "jupyterHub" }
+                .environment()
+        assertThat(jupyterEnvs.first { k -> k.name() == "GITHUB_URL" }
+                .value()).isEqualTo("github.com")
+    }
+
     @Configuration
     class AwsCommunicatorConfig {
 

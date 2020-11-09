@@ -69,7 +69,8 @@ data class UserContainerProperties(
         val pushHost: String,
         val pushCron: String,
         val s3fsVolumeName: String,
-        val githubProxyUrl: String
+        val githubProxyUrl: String,
+        val githubUrl: String
 )
 
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)

@@ -129,7 +129,8 @@ class TaskDeploymentService {
                     pushHost,
                     pushCron,
                     s3fsVolume.name(),
-                    githubProxyUrl
+                    githubProxyUrl,
+                    configurationResolver.getStringConfig(ConfigKey.GITHUB_URL).replaceFirst(Regex("^http[s]?://"),"")
             )
 
             val containerDefinitions = buildContainerDefinitions(userContainerProperties)
@@ -232,6 +233,7 @@ class TaskDeploymentService {
                         "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
                         "KMS_HOME" to containerProperties.kmsHome,
                         "KMS_SHARED" to containerProperties.kmsShared,
+                        "GITHUB_URL" to containerProperties.githubUrl,
                         "DISABLE_AUTH" to "true"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "hue"))
@@ -251,6 +253,7 @@ class TaskDeploymentService {
                         "USER" to containerProperties.userName,
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
                         "DISABLE_AUTH" to "true",
+                        "GITHUB_URL" to containerProperties.githubUrl,
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
@@ -280,6 +283,7 @@ class TaskDeploymentService {
                         "GIT_REPO" to containerProperties.gitRepo,
                         "PUSH_HOST" to containerProperties.pushHost,
                         "PUSH_CRON" to containerProperties.pushCron,
+                        "GITHUB_URL" to containerProperties.githubUrl,
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
