@@ -61,6 +61,7 @@ class TaskDeploymentServiceTest {
 
     @Before
     fun setupMocks() {
+        clearInvocations(awsCommunicator)
         whenever(awsCommunicator.getKmsKeyArn(any())).doAnswer {
             val alias = it.getArgument<String>(0).split("/").last()
             "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-$alias"
