@@ -53,7 +53,7 @@ module "ecs-fargate-task-definition" {
       value = data.terraform_remote_state.aws_analytical_env_app.outputs.emr_hostname
     },
     {
-      name  = "orchestrationService.orchestrationService.livy_proxy_url"
+      name  = "orchestrationService.livy_proxy_url"
       value = "https://${data.terraform_remote_state.aws_analytical_env_app.outputs.livy_proxy.fqdn}"
     },
     {
