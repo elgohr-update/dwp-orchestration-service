@@ -46,6 +46,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEn
                               "orchestrationService.push_gateway_cron=*/5 * * * *",
                               "orchestrationService.github_proxy_url=proxy.tld:3128",
                               "orchestrationService.github_url=https://github.com",
+                              "orchestrationService.livy_proxy_url=https://livy-proxy.com",
                               "TAGS={}",
                               "spring.main.allow-bean-definition-overriding=true"])
 class TaskDeploymentServiceTest {

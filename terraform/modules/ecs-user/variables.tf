@@ -59,6 +59,11 @@ variable emr_sg_id {
   description = "Security Group id of EMR cluster"
 }
 
+variable livy_sg_id {
+  type        = string
+  description = "Security Group id of Livy"
+}
+
 variable pushgateway_sg_id {
   type        = string
   description = "Security Group ID of the Pushgateway"

@@ -76,5 +76,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     PUSH_HOST("orchestrationService.push_gateway_host", false),
     PUSH_CRON("orchestrationService.push_gateway_cron", false),
     GITHUB_PROXY_URL("orchestrationService.github_proxy_url", false),
-    GITHUB_URL( "orchestrationService.github_url", false)
+    GITHUB_URL( "orchestrationService.github_url", false),
+    LIVY_PROXY_URL("orchestrationService.livy_proxy_url", false)
 }

@@ -80,7 +80,7 @@ resource "aws_security_group_rule" "egress_host_to_emr_livy" {
   from_port                = var.livy_port
   to_port                  = var.livy_port
   security_group_id        = aws_security_group.user_host.id
-  source_security_group_id = var.emr_sg_id
+  source_security_group_id = var.livy_sg_id
   type                     = "egress"
 }
 
@@ -89,7 +89,7 @@ resource "aws_security_group_rule" "ingress_emr_livy_from_host" {
   protocol                 = "tcp"
   from_port                = var.livy_port
   to_port                  = var.livy_port
-  security_group_id        = var.emr_sg_id
+  security_group_id        = var.livy_sg_id
   source_security_group_id = aws_security_group.user_host.id
   type                     = "ingress"
 }
@@ -134,3 +134,24 @@ resource "aws_security_group_rule" "ingress_emr_hive_from_host" {
   type                     = "ingress"
 }
 
+# Temporarily allow hue to connect to EMR directly until Dataworks
+# certificates are added to user containers
+resource "aws_security_group_rule" "egress_host_to_emr_livy_hue" {
+  description              = "Allow host TCP to EMR Livy"
+  protocol                 = "tcp"
+  from_port                = var.livy_port
+  to_port                  = var.livy_port
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.emr_sg_id
+  type                     = "egress"
+}
+
+resource "aws_security_group_rule" "ingress_emr_livy_from_host_hue" {
+  description              = "Allow host TCP to EMR Livy"
+  protocol                 = "tcp"
+  from_port                = var.livy_port
+  to_port                  = var.livy_port
+  security_group_id        = var.emr_sg_id
+  source_security_group_id = aws_security_group.user_host.id
+  type                     = "ingress"
+}

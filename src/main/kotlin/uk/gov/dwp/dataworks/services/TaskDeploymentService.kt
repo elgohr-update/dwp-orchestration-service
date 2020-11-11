@@ -130,7 +130,8 @@ class TaskDeploymentService {
                     pushCron,
                     s3fsVolume.name(),
                     githubProxyUrl,
-                    configurationResolver.getStringConfig(ConfigKey.GITHUB_URL).replaceFirst(Regex("^http[s]?://"),"")
+                    configurationResolver.getStringConfig(ConfigKey.GITHUB_URL).replaceFirst(Regex("^http[s]?://"),""),
+                    configurationResolver.getStringConfig(ConfigKey.LIVY_PROXY_URL)
             )
 
             val containerDefinitions = buildContainerDefinitions(userContainerProperties)
@@ -251,9 +252,10 @@ class TaskDeploymentService {
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
-                        "EMR_HOST_NAME" to containerProperties.emrHostname,
+                        "EMR_URL" to (containerProperties.livyProxyUrl ?: "http://${containerProperties.emrHostname}:8998"),
                         "DISABLE_AUTH" to "true",
                         "GITHUB_URL" to containerProperties.githubUrl,
+                        "JWT_TOKEN" to containerProperties.cognitoToken,
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
@@ -279,11 +281,12 @@ class TaskDeploymentService {
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
-                        "EMR_HOST_NAME" to containerProperties.emrHostname,
+                        "EMR_URL" to (containerProperties.livyProxyUrl ?: "http://${containerProperties.emrHostname}:8998"),
                         "GIT_REPO" to containerProperties.gitRepo,
                         "PUSH_HOST" to containerProperties.pushHost,
                         "PUSH_CRON" to containerProperties.pushCron,
                         "GITHUB_URL" to containerProperties.githubUrl,
+                        "JWT_TOKEN" to containerProperties.cognitoToken,
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
