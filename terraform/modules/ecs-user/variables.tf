@@ -59,7 +59,7 @@ variable emr_sg_id {
   description = "Security Group id of EMR cluster"
 }
 
-variable livy_sg_id {
+variable livy_proxy_sg_id {
   type        = string
   description = "Security Group id of Livy"
 }
