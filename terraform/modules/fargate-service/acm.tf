@@ -3,7 +3,7 @@ resource "aws_acm_certificate" "orchestration-cert" {
   certificate_authority_arn = var.cert_authority_arn
 
   options {
-    certificate_transparency_logging_preference = "DISABLED"
+    certificate_transparency_logging_preference = "ENABLED"
   }
 
   lifecycle {
