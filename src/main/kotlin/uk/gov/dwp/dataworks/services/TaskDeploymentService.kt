@@ -10,10 +10,16 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
+import uk.gov.dwp.dataworks.TextSSHKeyPair
 import uk.gov.dwp.dataworks.UserContainerProperties
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import uk.gov.dwp.dataworks.aws.AwsParsing
 import uk.gov.dwp.dataworks.logging.DataworksLogger
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.security.KeyPairGenerator
+import java.security.interfaces.RSAPublicKey
+import java.util.Base64
 import java.util.UUID
 
 @Service
@@ -173,7 +179,8 @@ class TaskDeploymentService {
     private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
-        val tabs = mutableMapOf<Int,String>();
+        val tabs = mutableMapOf<Int,String>()
+        val sshKeyPair = this.generateSshKeyPair()
 
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
@@ -338,6 +345,7 @@ class TaskDeploymentService {
                                 "--connectivity-check-url=https://localhost:8000",
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
+                        "SFTP_PUBLIC_KEY" to sshKeyPair.public,
                         *proxyEnvVariables))
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
@@ -376,7 +384,17 @@ class TaskDeploymentService {
                         "KEYSTORE_DATA" to authService.getB64KeyStoreData(),
                         "VALIDATE_ISSUER" to "true",
                         "ISSUER" to authService.issuerUrl,
-                        "CLIENT_PARAMS" to "hostname=localhost,port=5900,disable-copy=true",
+                        "CLIENT_PARAMS" to arrayOf(
+                            "hostname=localhost",
+                            "port=5900",
+                            "disable-copy=true",
+                            "enable-sftp=true",
+                            "sftp-port=8022",
+                            "sftp-username=alpine",
+                            "sftp-root-directory=/mnt/s3fs",
+                            "sftp-directory=/mnt/s3fs/s3-home"
+                        ).joinToString(","),
+                        "SFTP_PRIVATE_KEY_B64" to Base64.getEncoder().encodeToString(sshKeyPair.private.toByteArray()),
                         "CLIENT_USERNAME" to containerProperties.userName.substring(0, containerProperties.userName.length - 3)))
                 .portMappings(PortMapping.builder().hostPort(containerProperties.guacamolePort).containerPort(containerProperties.guacamolePort).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacamole"))
@@ -434,5 +452,35 @@ class TaskDeploymentService {
                 .map { awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountId:alias/$it-shared") }
                 .plus(listOf("$jupyterS3Arn/*", awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountId:alias/$userName-home")))
         return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyterkmsaccessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
+    }
+
+    fun generateSshKeyPair(): TextSSHKeyPair {
+        val generator = KeyPairGenerator.getInstance("RSA")
+        generator.initialize(4096)
+        val keypair = generator.genKeyPair()
+        val public = keypair.public as RSAPublicKey
+
+        val sshRsaByteStream = ByteArrayOutputStream()
+        val dos = DataOutputStream(sshRsaByteStream)
+
+        dos.writeInt("ssh-rsa".toByteArray().size)
+        dos.write("ssh-rsa".toByteArray())
+
+        val e = public.publicExponent
+        dos.writeInt(e.toByteArray().size)
+        dos.write(e.toByteArray())
+
+        val m = public.modulus
+        dos.writeInt(m.toByteArray().size)
+        dos.write(m.toByteArray())
+
+        val sshPublicKeyEncoded = Base64.getEncoder().encodeToString(sshRsaByteStream.toByteArray())
+
+        val textPublicKey = "ssh-rsa $sshPublicKeyEncoded"
+        val textPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
+            Base64.getEncoder().encodeToString(keypair.private.encoded).chunked(64).joinToString("\n") +
+            "\n-----END RSA PRIVATE KEY-----\n"
+        return TextSSHKeyPair(textPrivateKey, textPublicKey)
+
     }
 }

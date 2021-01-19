@@ -74,6 +74,11 @@ data class UserContainerProperties(
         val livyProxyUrl: String?,
 )
 
+data class TextSSHKeyPair(
+    val private: String,
+    val public: String
+)
+
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
 data class StatementObject(
         @JsonProperty("Sid") var sid: String,
