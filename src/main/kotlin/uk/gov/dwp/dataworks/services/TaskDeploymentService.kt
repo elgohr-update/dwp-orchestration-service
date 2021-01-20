@@ -387,7 +387,7 @@ class TaskDeploymentService {
                         "CLIENT_PARAMS" to arrayOf(
                             "hostname=localhost",
                             "port=5900",
-                            "disable-copy=true",
+                            "disable-copy=false",
                             "enable-sftp=true",
                             "sftp-port=8022",
                             "sftp-username=alpine",
