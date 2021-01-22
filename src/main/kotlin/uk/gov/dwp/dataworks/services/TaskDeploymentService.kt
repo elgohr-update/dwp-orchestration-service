@@ -346,6 +346,7 @@ class TaskDeploymentService {
                                 "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
                         "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
                         "SFTP_PUBLIC_KEY" to sshKeyPair.public,
+                        "DOWNLOADS_LOCATION" to "/mnt/s3fs/s3-home",
                         *proxyEnvVariables))
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
