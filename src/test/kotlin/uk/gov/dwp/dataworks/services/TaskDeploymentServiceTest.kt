@@ -60,6 +60,9 @@ class TaskDeploymentServiceTest {
     @Autowired
     private lateinit var taskDeploymentService: TaskDeploymentService
 
+    @Autowired
+    private lateinit var userAuthorizationService: UserAuthorizationService
+
     @Before
     fun setupMocks() {
         clearInvocations(awsCommunicator)
@@ -118,10 +121,90 @@ class TaskDeploymentServiceTest {
         val def = captor.firstValue
         assertThat(def).isNotNull
         val jupyterEnvs = def.containerDefinitions()
-                .first { x : ContainerDefinition -> x.name() == "jupyterHub" }
-                .environment()
+            .first { x: ContainerDefinition -> x.name() == "jupyterHub" }
+            .environment()
         assertThat(jupyterEnvs.first { k -> k.name() == "GITHUB_URL" }
-                .value()).isEqualTo("github.com")
+            .value()).isEqualTo("github.com")
+    }
+
+    @Test
+    fun `Task definition configures SFTP correctly if allowed`() {
+        reset(userAuthorizationService)
+        whenever(
+            userAuthorizationService.hasUserToolingPermission(
+                "username",
+                ToolingPermission.FILE_TRANSFER_DOWNLOAD
+            )
+        ).doReturn(true)
+
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
+        val taskDef = captor.firstValue
+        assertThat(taskDef).isNotNull
+        val chromeSftpPublicKey = taskDef.containerDefinitions().first { it.name() == "headless_chrome" }.environment()
+            .firstOrNull { it.name() == "SFTP_PUBLIC_KEY" }
+        val guacamoleSftpPrivateKey = taskDef.containerDefinitions().first { it.name() == "guacamole" }.environment()
+            .firstOrNull { it.name() == "SFTP_PRIVATE_KEY_B64" }
+        assertThat(chromeSftpPublicKey).isNotNull
+        assertThat(guacamoleSftpPrivateKey).isNotNull
+
+        val vncOpts = taskDef.containerDefinitions().first { it.name() == "headless_chrome" }.environment()
+            .first { it.name() == "VNC_OPTS" }
+        assertThat(vncOpts.value()).contains("-noclipboard")
+
+    }
+
+    @Test
+    fun `Task definition configures clipboard correctly if allowed`() {
+        reset(userAuthorizationService)
+        whenever(
+            userAuthorizationService.hasUserToolingPermission(
+                "username",
+                ToolingPermission.CLIPBOARD_OUT
+            )
+        ).doReturn(true)
+
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
+        val taskDef = captor.firstValue
+        assertThat(taskDef).isNotNull
+        val chromeSftpPublicKey = taskDef.containerDefinitions().first { it.name() == "headless_chrome" }.environment()
+            .firstOrNull { it.name() == "SFTP_PUBLIC_KEY" }
+        val guacamoleSftpPrivateKey = taskDef.containerDefinitions().first { it.name() == "guacamole" }.environment()
+            .firstOrNull { it.name() == "SFTP_PRIVATE_KEY_B64" }
+        assertThat(chromeSftpPublicKey).isNull()
+        assertThat(guacamoleSftpPrivateKey).isNull()
+
+        val vncOpts = taskDef.containerDefinitions().first { it.name() == "headless_chrome" }.environment()
+            .first { it.name() == "VNC_OPTS" }
+        assertThat(vncOpts.value()).doesNotContain("-noclipboard")
+
+    }
+
+    @Test
+    fun `Disables upload and download if user doesn't have permission`(){
+        reset(userAuthorizationService)
+        whenever(
+            userAuthorizationService.hasUserToolingPermission(
+                eq("username"),
+                any()
+            )
+        ).then { it.arguments[1] == ToolingPermission.FILE_TRANSFER_DOWNLOAD }
+
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
+        val taskDef = captor.firstValue
+        assertThat(taskDef).isNotNull
+
+        val guacamoleClientParams = taskDef.containerDefinitions().first { it.name() == "guacamole" }.environment()
+            .first { it.name() == "CLIENT_PARAMS" }.value()
+
+        assertThat(guacamoleClientParams).contains("sftp-disable-download=false")
+        assertThat(guacamoleClientParams).contains("sftp-disable-upload=true")
+
     }
 
     @Configuration
@@ -149,6 +232,11 @@ class TaskDeploymentServiceTest {
                 on { createIamPolicy(any(), any(), any(), any())}.thenReturn(p)
                 on { createIamRole(any(), any(), any())}.thenReturn(r)
             }
+        }
+
+        @Bean
+        fun userAuthorizationService(): UserAuthorizationService {
+            return mock<UserAuthorizationService>();
         }
 
         @Bean

@@ -249,3 +249,8 @@ variable "management_role_arn" {
   type        = string
   description = "(Required) The role to assume when accessing resources in management"
 }
+
+variable "rds_credentials_secret_arn" {
+  type        = string
+  description = "(Required) The ARN of secretsmanager secret storing the RDS credentials for the RBAC database"
+}

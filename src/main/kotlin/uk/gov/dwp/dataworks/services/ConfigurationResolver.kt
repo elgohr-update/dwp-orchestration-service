@@ -27,16 +27,30 @@ class ConfigurationResolver {
         }
     }
 
+    fun getStringConfigOrDefault(configKey: ConfigKey, default: String): String {
+        return stringConfigs.computeIfAbsent(configKey) {
+            env.getProperty(configKey.key) ?: default
+        }
+    }
+
     fun getListConfig(configKey: ConfigKey): List<String> {
         return listConfigs.computeIfAbsent(configKey) {
-            val sysConfig = env.getProperty(configKey.key) ?: throw SystemArgumentException("No value found for ${configKey.key}")
+            val sysConfig =
+                env.getProperty(configKey.key) ?: throw SystemArgumentException("No value found for ${configKey.key}")
             sysConfig.split(",").toList()
+        }
+    }
+
+    fun getListConfigOrDefault(configKey: ConfigKey, default: List<String>): List<String> {
+        return listConfigs.computeIfAbsent(configKey) {
+            val config = env.getProperty(configKey.key)
+            config?.split(",")?.toList() ?: default
         }
     }
 
     fun getAllConfig(): Map<ConfigKey, Any> {
         ConfigKey.values().forEach {
-            if(it.isList)
+            if (it.isList)
                 getListConfig(it)
             else
                 getStringConfig(it)
@@ -44,8 +58,8 @@ class ConfigurationResolver {
         return stringConfigs.plus(listConfigs)
     }
 
-    fun getIfEmpty(value: String, configKey: ConfigKey): String{
-        return if(value != "") value else getStringConfig(configKey)
+    fun getIfEmpty(value: String, configKey: ConfigKey): String {
+        return if (value != "") value else getStringConfig(configKey)
     }
 
     fun clear() {
@@ -76,6 +90,10 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     PUSH_HOST("orchestrationService.push_gateway_host", false),
     PUSH_CRON("orchestrationService.push_gateway_cron", false),
     GITHUB_PROXY_URL("orchestrationService.github_proxy_url", false),
-    GITHUB_URL( "orchestrationService.github_url", false),
-    LIVY_PROXY_URL("orchestrationService.livy_proxy_url", false)
+    GITHUB_URL("orchestrationService.github_url", false),
+    LIVY_PROXY_URL("orchestrationService.livy_proxy_url", false),
+    RDS_CREDENTIALS_SECRET_ARN("orchestrationService.rds_credentials_secret_arn", false),
+    RDS_DATABASE_NAME("orchestrationService.rds_database_name", false),
+    RDS_CLUSTER_ARN("orchestrationService.rds_cluster_arn", false),
+    TOOLING_PERMISSION_OVERRIDES("orchestrationService.tooling_permission_overrides", true)
 }

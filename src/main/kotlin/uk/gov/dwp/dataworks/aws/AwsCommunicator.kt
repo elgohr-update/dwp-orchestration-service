@@ -47,13 +47,19 @@ import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
 import software.amazon.awssdk.services.kms.model.NotFoundException
+import software.amazon.awssdk.services.rdsdata.model.ExecuteStatementRequest
+import software.amazon.awssdk.services.rdsdata.model.ExecuteStatementResponse
+import software.amazon.awssdk.services.rdsdata.model.RdsDataException
+import software.amazon.awssdk.services.rdsdata.model.SqlParameter
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
 import uk.gov.dwp.dataworks.MultipleLoadBalancersMatchedException
 import uk.gov.dwp.dataworks.NetworkConfigurationMissingException
+import uk.gov.dwp.dataworks.SystemArgumentException
 import uk.gov.dwp.dataworks.UpperRuleLimitReachedException
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import uk.gov.dwp.dataworks.services.ActiveUserTasks
 import uk.gov.dwp.dataworks.services.ConfigKey
+import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import software.amazon.awssdk.services.ecs.model.LoadBalancer as EcsLoadBalancer
 
 /**
@@ -73,6 +79,9 @@ class AwsCommunicator {
 
     @Autowired
     private lateinit var awsClients: AwsClients
+
+    @Autowired
+    private lateinit var configurationResolver: ConfigurationResolver
 
     /**
      * Retrieve a [LoadBalancer] from AWS given it's name. If multiple LoadBalancers are found with the same
@@ -539,5 +548,24 @@ class AwsCommunicator {
             logger.error("KMS key not found: ${keyAlias}")
             return false
         }
+    }
+
+
+    fun rdsExecuteStatement(sql: String, parameters: Collection<SqlParameter>? = null): ExecuteStatementResponse {
+        try {
+            return awsClients.rdsDataClient.executeStatement(
+                ExecuteStatementRequest.builder()
+                    .secretArn(configurationResolver.getStringConfig(ConfigKey.RDS_CREDENTIALS_SECRET_ARN))
+                    .resourceArn(configurationResolver.getStringConfig(ConfigKey.RDS_CLUSTER_ARN))
+                    .database(configurationResolver.getStringConfig(ConfigKey.RDS_DATABASE_NAME))
+                    .parameters(parameters)
+                    .sql(sql)
+                    .build()
+            )
+        } catch (e: SystemArgumentException) {
+            logger.error("RDS database not configured")
+            throw RdsDataException.builder().message("Not configured").cause(e).build()
+        }
+
     }
 }

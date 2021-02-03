@@ -116,6 +116,29 @@ data "aws_iam_policy_document" "task_role" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "AllowGetRdsCredentials"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:ListSecretVersionIds"
+    ]
+    resources = [
+      var.rds_credentials_secret_arn,
+    ]
+  }
+
+  statement {
+    sid       = "AllowRdsDataExecute"
+    effect    = "Allow"
+    actions   = [
+      "rds-data:ExecuteStatement"
+    ]
+    resources = ["*"] // RDS-data does not support resource ARNs, access is restricted by credential permissions
+  }
+
 }
 
 resource "aws_iam_policy" "ecs_task_role" {

@@ -14,6 +14,7 @@ module "ecs-fargate-task-definition" {
   role_arn                     = "arn:aws:iam::${local.account[local.environment]}:role/${var.assume_role}"
   management_role_arn          = "arn:aws:iam::${local.account[local.management_account[local.environment]]}:role/${var.assume_role}"
   account                      = lookup(local.account, local.environment)
+  rds_credentials_secret_arn   = data.terraform_remote_state.aws_analytical_env_app.outputs.rbac_db.secrets.client_credentials["orchestration_service"].arn
   log_configuration = {
     secretOptions = []
     logDriver     = "awslogs"
@@ -118,6 +119,7 @@ module "ecs-fargate-task-definition" {
         "ecs.${var.region}.amazonaws.com",
         "application-autoscaling.${var.region}.amazonaws.com",
         "events.${var.region}.amazonaws.com",
+        "rds-data.${var.region}.amazonaws.com"
       ])
     },
     {
@@ -143,7 +145,23 @@ module "ecs-fargate-task-definition" {
     {
       name  = "orchestrationService.github_url"
       value = local.github_url
-    }
+    },
+    {
+      name  = "orchestrationService.rds_credentials_secret_arn"
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.rbac_db.secrets.client_credentials["orchestration_service"].arn
+    },
+    {
+      name  = "orchestrationService.rds_database_name"
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.rbac_db.rds_cluster.database_name
+    },
+    {
+      name  = "orchestrationService.rds_cluster_arn"
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.rbac_db.rds_cluster.arn
+    },
+    {
+      name  = "orchestrationService.tooling_permission_overrides"
+      value = "file_transfer_download,file_transfer_upload"
+    },
   ]
 }
 #

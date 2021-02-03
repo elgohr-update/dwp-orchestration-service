@@ -26,6 +26,8 @@ dependencies {
 	implementation("software.amazon.awssdk:dynamodb")
 	implementation("software.amazon.awssdk:iam")
 	implementation("software.amazon.awssdk:kms")
+	implementation("software.amazon.awssdk:rdsdata")
+
 	// Spring
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springdoc:springdoc-openapi-core:1.1.49")

@@ -42,6 +42,9 @@ class TaskDeploymentService {
     @Autowired
     private lateinit var authService: AuthenticationService
 
+    @Autowired
+    private lateinit var authorizationService: UserAuthorizationService
+
     @Value("classpath:policyDocuments/taskAssumeRolePolicy.json")
     lateinit var taskAssumeRoleDocument: Resource
 
@@ -166,21 +169,30 @@ class TaskDeploymentService {
 
     private fun buildLogConfiguration(userName: String, containerName: String): LogConfiguration {
         val logConfig = LogConfiguration.builder()
-                .logDriver("awslogs")
-                .options(mapOf(
-                        "awslogs-group" to configurationResolver.getStringConfig(ConfigKey.CONTAINER_LOG_GROUP),
-                        "awslogs-region" to configurationResolver.getStringConfig(ConfigKey.AWS_REGION),
-                        "awslogs-stream-prefix" to "${userName}_${containerName}"
-                ))
-                .build()
+            .logDriver("awslogs")
+            .options(
+                mapOf(
+                    "awslogs-group" to configurationResolver.getStringConfig(ConfigKey.CONTAINER_LOG_GROUP),
+                    "awslogs-region" to configurationResolver.getStringConfig(ConfigKey.AWS_REGION),
+                    "awslogs-stream-prefix" to "${userName}_${containerName}"
+                )
+            )
+            .build()
         return logConfig
     }
 
     private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = 1920 to 1080
-        val tabs = mutableMapOf<Int,String>()
+        val tabs = mutableMapOf<Int, String>()
         val sshKeyPair = this.generateSshKeyPair()
+        val hasFileTransferDownloadPermission = authorizationService
+            .hasUserToolingPermission(containerProperties.userName, ToolingPermission.FILE_TRANSFER_DOWNLOAD)
+        val hasFileTransferUploadPermission = authorizationService
+            .hasUserToolingPermission(containerProperties.userName, ToolingPermission.FILE_TRANSFER_UPLOAD)
+        val hasFileTransferPermission = hasFileTransferDownloadPermission || hasFileTransferUploadPermission
+        val hasClipboardOutPermission = authorizationService
+            .hasUserToolingPermission(containerProperties.userName, ToolingPermission.CLIPBOARD_OUT)
 
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
@@ -318,41 +330,45 @@ class TaskDeploymentService {
         tabs.put(50, "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken)
 
         val headlessChrome = ContainerDefinition.builder()
-                .name("headless_chrome")
-                .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
-                .cpu(512)
-                .memory(2048)
-                .essential(true)
-                .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
-                .linuxParameters(linuxParameters)
-                .environment(pairsToKeyValuePairs(
-                        "VNC_OPTS" to "-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 -noclipboard",
-                        "CHROME_OPTS" to arrayOf(
-                                "--no-sandbox",
-                                "--window-position=0,0",
-                                "--force-device-scale-factor=1",
-                                "--incognito",
-                                "--noerrdialogs",
-                                "--disable-translate",
-                                "--no-first-run",
-                                "--disable-infobars",
-                                "--disable-features=TranslateUI",
-                                "--disk-cache-dir=/dev/null",
-                                "--test-type ${tabs.toSortedMap().values.joinToString(" ")}",
-                                "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk\"",
-                                "--ignore-certificate-errors",
-                                "--enable-auto-reload",
-                                "--connectivity-check-url=https://localhost:8000",
-                                "--window-size=${screenSize.toList().joinToString(",")}").joinToString(" "),
-                        "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
-                        "SFTP_PUBLIC_KEY" to sshKeyPair.public,
-                        "DOWNLOADS_LOCATION" to "/mnt/s3fs/s3-home",
-                        *proxyEnvVariables))
-                .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
-                .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
-                .healthCheck(headlessChromeHealthCheck)
-                .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
-                .build()
+            .name("headless_chrome")
+            .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
+            .cpu(512)
+            .memory(2048)
+            .essential(true)
+            .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
+            .linuxParameters(linuxParameters)
+            .environment(
+                pairsToKeyValuePairs(
+                    "VNC_OPTS" to """-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 ${if (hasClipboardOutPermission) "" else "-noclipboard"}""",
+                    "CHROME_OPTS" to arrayOf(
+                        "--no-sandbox",
+                        "--window-position=0,0",
+                        "--force-device-scale-factor=1",
+                        "--incognito",
+                        "--noerrdialogs",
+                        "--disable-translate",
+                        "--no-first-run",
+                        "--disable-infobars",
+                        "--disable-features=TranslateUI",
+                        "--disk-cache-dir=/dev/null",
+                        "--test-type ${tabs.toSortedMap().values.joinToString(" ")}",
+                        "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk\"",
+                        "--ignore-certificate-errors",
+                        "--enable-auto-reload",
+                        "--connectivity-check-url=https://localhost:8000",
+                        "--window-size=${screenSize.toList().joinToString(",")}"
+                    ).joinToString(" "),
+                    "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
+                    if (hasFileTransferPermission) "SFTP_PUBLIC_KEY" to sshKeyPair.public else null,
+                    "DOWNLOADS_LOCATION" to "/mnt/s3fs/s3-home",
+                    *proxyEnvVariables
+                )
+            )
+            .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
+            .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
+            .healthCheck(headlessChromeHealthCheck)
+            .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
+            .build()
 
         val guacdHealthCheck = HealthCheck.builder()
                 .command("CMD", "nc", "-z", "127.0.0.1", "4822")
@@ -374,33 +390,45 @@ class TaskDeploymentService {
                 .build()
 
         val guacamole = ContainerDefinition.builder()
-                .name("guacamole")
-                .image("$ecrEndpoint/aws-analytical-env/guacamole")
-                .cpu(256)
-                .memory(896)
-                .essential(true)
-                .environment(pairsToKeyValuePairs(
-                        "GUACD_HOSTNAME" to "localhost",
-                        "GUACD_PORT" to "4822",
-                        "KEYSTORE_DATA" to authService.getB64KeyStoreData(),
-                        "VALIDATE_ISSUER" to "true",
-                        "ISSUER" to authService.issuerUrl,
-                        "CLIENT_PARAMS" to arrayOf(
-                            "hostname=localhost",
-                            "port=5900",
-                            "disable-copy=false",
-                            "enable-sftp=true",
-                            "sftp-port=8022",
-                            "sftp-username=alpine",
-                            "sftp-root-directory=/mnt/s3fs",
-                            "sftp-directory=/mnt/s3fs/s3-home"
-                        ).joinToString(","),
-                        "SFTP_PRIVATE_KEY_B64" to Base64.getEncoder().encodeToString(sshKeyPair.private.toByteArray()),
-                        "CLIENT_USERNAME" to containerProperties.userName.substring(0, containerProperties.userName.length - 3)))
-                .portMappings(PortMapping.builder().hostPort(containerProperties.guacamolePort).containerPort(containerProperties.guacamolePort).build())
-                .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacamole"))
-                .dependsOn(jupyterhubContainerDependency, guacdContainerDependency)
-                .build()
+            .name("guacamole")
+            .image("$ecrEndpoint/aws-analytical-env/guacamole")
+            .cpu(256)
+            .memory(896)
+            .essential(true)
+            .environment(
+                pairsToKeyValuePairs(
+                    "GUACD_HOSTNAME" to "localhost",
+                    "GUACD_PORT" to "4822",
+                    "KEYSTORE_DATA" to authService.getB64KeyStoreData(),
+                    "VALIDATE_ISSUER" to "true",
+                    "ISSUER" to authService.issuerUrl,
+                    "CLIENT_PARAMS" to arrayOf(
+                        "hostname=localhost",
+                        "port=5900",
+                        "disable-copy=false",
+                        "enable-sftp=true",
+                        "sftp-port=8022",
+                        "sftp-username=alpine",
+                        "sftp-root-directory=/mnt/s3fs",
+                        "sftp-directory=/mnt/s3fs/s3-home",
+                        "sftp-disable-download=${if(!hasFileTransferDownloadPermission) "true" else "false"}",
+                        "sftp-disable-upload=${if(!hasFileTransferUploadPermission) "true" else "false"}"
+                    ).joinToString(","),
+                    if (hasFileTransferPermission) "SFTP_PRIVATE_KEY_B64" to Base64.getEncoder()
+                        .encodeToString(sshKeyPair.private.toByteArray()) else null,
+                    "CLIENT_USERNAME" to containerProperties.userName.substring(
+                        0,
+                        containerProperties.userName.length - 3
+                    )
+                )
+            )
+            .portMappings(
+                PortMapping.builder().hostPort(containerProperties.guacamolePort)
+                    .containerPort(containerProperties.guacamolePort).build()
+            )
+            .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacamole"))
+            .dependsOn(jupyterhubContainerDependency, guacdContainerDependency)
+            .build()
 
         val s3fsHealthCheck = HealthCheck.builder()
                 .command("CMD", "pgrep", "tail")
@@ -434,8 +462,8 @@ class TaskDeploymentService {
         return listOf(jupyterHub, headlessChrome, guacd, guacamole, rstudioOss, hue, s3fs)
     }
 
-    private fun pairsToKeyValuePairs(vararg pairs: Pair<String, String>): Collection<KeyValuePair> {
-        return pairs.map { KeyValuePair.builder().name(it.first).value(it.second).build() }
+    private fun pairsToKeyValuePairs(vararg pairs: Pair<String, String>?): Collection<KeyValuePair> {
+        return pairs.filterNotNull().map { KeyValuePair.builder().name(it.first).value(it.second).build() }
     }
 
     fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String, accountId: String): Policy {
