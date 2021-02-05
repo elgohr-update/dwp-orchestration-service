@@ -4,6 +4,30 @@ resource "aws_iam_role" "user_host" {
   tags               = var.common_tags
 }
 
+resource "aws_iam_role_policy_attachment" "user_host_ec2_tagging" {
+  role       = aws_iam_role.user_host.name
+  policy_arn = aws_iam_policy.user_host_ec2_tagging.arn
+}
+
+resource "aws_iam_policy" "user_host_ec2_tagging" {
+  name        = "UserHostEc2TaggingPolicy"
+  description = "Allow user host instances to modify tags"
+  policy      = data.aws_iam_policy_document.user_host_ec2_tagging.json
+}
+
+data "aws_iam_policy_document" "user_host_ec2_tagging" {
+  statement {
+    sid    = "EnableEC2PermissionsHost"
+    effect = "Allow"
+
+    actions = [
+      "ec2:ModifyInstanceMetadataOptions",
+      "ec2:*Tags",
+    ]
+    resources = ["arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*"]
+  }
+}
+
 data "aws_iam_policy_document" "assume_role_ec2" {
   statement {
     sid     = "AllowEC2ToAssumeRole"

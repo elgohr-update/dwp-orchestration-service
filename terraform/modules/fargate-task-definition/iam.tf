@@ -131,9 +131,9 @@ data "aws_iam_policy_document" "task_role" {
   }
 
   statement {
-    sid       = "AllowRdsDataExecute"
-    effect    = "Allow"
-    actions   = [
+    sid    = "AllowRdsDataExecute"
+    effect = "Allow"
+    actions = [
       "rds-data:ExecuteStatement"
     ]
     resources = ["*"] // RDS-data does not support resource ARNs, access is restricted by credential permissions

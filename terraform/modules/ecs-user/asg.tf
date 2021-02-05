@@ -91,6 +91,21 @@ EOF
 EOF
   }
 
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
+    # rename ec2 instance to be unique
+    export AWS_DEFAULT_REGION=${data.aws_region.current.name}
+    export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+    UUID=$(dbus-uuidgen | cut -c 1-8)
+    export HOSTNAME=${var.name_prefix}-user-host-$UUID
+    hostnamectl set-hostname $HOSTNAME
+    aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$HOSTNAME
+EOF
+  }
+
 }
 
 resource "aws_launch_template" "user_host" {
