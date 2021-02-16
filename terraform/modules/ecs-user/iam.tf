@@ -55,12 +55,12 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.user_host.id
 }
 
-resource "aws_iam_role_policy_attachment" "cloudwatch_loggin" {
+resource "aws_iam_role_policy_attachment" "cloudwatch_logging" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
   role       = aws_iam_role.user_host.id
 }
 
-data "aws_iam_policy_document" "ecr" {
+data "aws_iam_policy_document" "user_host" {
   statement {
     sid     = "AllowUserHostECRGetAuthToken"
     effect  = "Allow"
@@ -81,9 +81,23 @@ data "aws_iam_policy_document" "ecr" {
     resources = ["arn:aws:ecr:${data.aws_region.current.name}:${var.management_account}:repository/orchestration-service/*"]
   }
 
+  statement {
+    sid = "AllowUserHostDownloadPackages"
+    effect = "Allow"
+    actions = [
+      "s3:Get*",
+      "s3:List*",
+      "kms:Decrypt"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.s3_packages.bucket}/${var.s3_packages.key_prefix}/*",
+      var.s3_packages.cmk_arn
+    ]
+  }
+
 }
 
-resource "aws_iam_role_policy" "ecr" {
-  policy = data.aws_iam_policy_document.ecr.json
+resource "aws_iam_role_policy" "user_host" {
+  policy = data.aws_iam_policy_document.user_host.json
   role   = aws_iam_role.user_host.id
 }

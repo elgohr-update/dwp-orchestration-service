@@ -84,3 +84,11 @@ variable hiveserver2_port {
   description = "Port that the Hive Server listens on"
   default     = 10000
 }
+
+variable "s3_packages" {
+  type = object({
+    bucket     = string
+    key_prefix = string
+    cmk_arn    = string
+  })
+}

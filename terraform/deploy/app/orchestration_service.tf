@@ -227,6 +227,12 @@ module "ecs-user-host" {
   pushgateway_sg_id       = data.terraform_remote_state.aws_analytical_env_app.outputs.pushgateway.lb_sg.id
   github_proxy_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.internet_proxy_sg
 
+  s3_packages = {
+    bucket = data.terraform_remote_state.common.outputs.config_bucket.id
+    cmk_arn = data.terraform_remote_state.common.outputs.config_bucket_cmk.arn
+    key_prefix = "component/aws-analytical-env/r-packages"
+  }
+
   vpc = {
     id                   = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
     aws_subnets_private  = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_subnets_private

@@ -96,6 +96,17 @@ EOF
     content      = <<EOF
     #!/bin/bash
 
+    # grab R packages from S3
+    export AWS_DEFAULT_REGION=${data.aws_region.current.name}
+    aws s3 sync s3://${var.s3_packages.bucket}/${var.s3_packages.key_prefix}/ /opt/dataworks/packages/r/
+EOF
+  }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
     # rename ec2 instance to be unique
     export AWS_DEFAULT_REGION=${data.aws_region.current.name}
     export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)

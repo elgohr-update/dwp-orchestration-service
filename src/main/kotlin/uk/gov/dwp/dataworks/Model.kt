@@ -69,6 +69,7 @@ data class UserContainerProperties(
         val pushHost: String,
         val pushCron: String,
         val s3fsVolumeName: String,
+        val packagesVolumeName: String,
         val githubProxyUrl: String,
         val githubUrl: String,
         val livyProxyUrl: String?,

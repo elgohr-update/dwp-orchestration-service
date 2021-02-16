@@ -122,6 +122,10 @@ class TaskDeploymentService {
                     .name("s3fs")
                     .host(HostVolumeProperties.builder().sourcePath("/opt/$userName").build())
                     .build()
+            val packagesVolume = Volume.builder()
+                .name("packages")
+                .host(HostVolumeProperties.builder().sourcePath("/opt/dataworks/packages").build())
+                .build()
 
             val userContainerProperties = UserContainerProperties(
                     cognitoToken,
@@ -138,6 +142,7 @@ class TaskDeploymentService {
                     pushHost,
                     pushCron,
                     s3fsVolume.name(),
+                    packagesVolume.name(),
                     githubProxyUrl,
                     configurationResolver.getStringConfig(ConfigKey.GITHUB_URL).replaceFirst(Regex("^http[s]?://"),""),
                     configurationResolver.getStringConfig(ConfigKey.LIVY_PROXY_URL)
@@ -151,7 +156,7 @@ class TaskDeploymentService {
                     .taskRoleArn(iamRole.arn())
                     .networkMode(NetworkMode.AWSVPC)
                     .containerDefinitions(containerDefinitions)
-                    .volumes(s3fsVolume)
+                    .volumes(s3fsVolume, packagesVolume)
                     .build()
 
             val registeredTaskDefinition = awsCommunicator.registerTaskDefinition(correlationId, taskDefinition, tags)
@@ -278,6 +283,7 @@ class TaskDeploymentService {
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
+                .mountPoints(MountPoint.builder().containerPath("/mnt/packages").sourceVolume(containerProperties.packagesVolumeName).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
                 .dependsOn(s3fsContainerDependency)
                 .build()
