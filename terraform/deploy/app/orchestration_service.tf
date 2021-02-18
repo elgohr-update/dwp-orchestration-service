@@ -262,6 +262,8 @@ module "jupyter_s3_storage" {
   common_tags    = local.common_tags
   logging_bucket = data.terraform_remote_state.security-tools.outputs.logstore_bucket.id
   vpc_id         = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
+  account        = lookup(local.account, local.environment)
+
 }
 
 #

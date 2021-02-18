@@ -17,3 +17,8 @@ variable "name_prefix" {
   type        = string
   description = "(Required) Name prefix for resources created"
 }
+
+variable "account" {
+  type        = string
+  description = "(Required) account id for environment"
+}
