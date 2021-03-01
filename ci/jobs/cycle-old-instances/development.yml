@@ -1,0 +1,15 @@
+jobs:
+  - name: cycle-old-instances-development
+    plan:
+    - get: utc-midnight-trigger
+      trigger: true
+    - get: orchestration-service
+      trigger: false
+    - .: (( inject meta.plan.terraform-bootstrap ))
+      params:
+        DEPLOY_PATH: app
+    - .: (( inject meta.plan.terraform-output ))
+    - .: (( inject meta.plan.cycle-old-user-host-instances ))
+      config:
+        params:
+          AWS_ROLE_ARN: arn:aws:iam::((aws_account.development)):role/ci

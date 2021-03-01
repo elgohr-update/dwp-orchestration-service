@@ -83,17 +83,54 @@ meta:
       config:
         run:
           path: sh
-          dir: orchestration-service/terraform/deploy
+          dir: orchestration-service/terraform/deploy/app
           args:
           - -exc
           - |
-            cp ../../../terraform-config/terraform.tf .
-            cp ../../../terraform-config/terraform.tfvars .
+            cp ../../../../terraform-config/terraform.tf .
+            cp ../../../../terraform-config/terraform.tfvars .
             terraform init
             terraform workspace show
-            terraform output -json > ../../../terraform-output/outputs.json
+            terraform output -json > ../../../../terraform-output/outputs.json
         inputs:
         - name: orchestration-service
         - name: terraform-config
         outputs:
         - name: terraform-output
+
+    cycle-old-user-host-instances:
+      task: cycle-old-user-host-instances
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: ((dataworks.docker_awscli_repository))
+            version: ((dataworks.docker_awscli_version))
+            tag: ((dataworks.docker_awscli_version))
+        params:
+          AWS_DEFAULT_REGION: ((dataworks.aws_region))
+        run:
+          path: sh
+          args:
+            - -exc
+            - |
+              source /assume-role
+              ASG_NAME=$(jq -r '.ecs_user_host.value.asg.name' < terraform-output/outputs.json)
+              ASG_INFO=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$ASG_NAME")
+              ASG_INSTANCES=$(echo "$ASG_INFO" | jq -r '.AutoScalingGroups[0] | .Instances | .[] | .InstanceId')
+              MAX_INSTANCE_LIFETIME=$(echo "$ASG_INFO" | jq -r '.AutoScalingGroups[0] | .MaxInstanceLifetime')
+              for instance in $ASG_INSTANCES; do
+                  INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$instance" | jq -r '.Reservations[0].Instances[0]')
+                  LAUNCH_TIME=$(echo "$INSTANCE_INFO" | jq -r '.LaunchTime' | sed 's/T/ /' | sed 's/\.[0-9][0-9][0-9]Z//g' | xargs -n 1 -I{} date -d {} +"%s")
+                  INSTANCE_EXPIRATION_TIME=$((LAUNCH_TIME + MAX_INSTANCE_LIFETIME))
+                  CURRENT_TIME=$(date +"%s")
+                  if [ "$CURRENT_TIME" -gt "$INSTANCE_EXPIRATION_TIME" ]; then
+                      INSTANCE_ID=$(echo "$INSTANCE_INFO" | jq -r '.InstanceId')
+                      echo "Terminating instance $INSTANCE_ID"
+                      aws ec2 terminate-instances --instance-ids "$INSTANCE_ID"
+                      sleep 1
+                  fi
+              done
+        inputs:
+          - name: terraform-output
