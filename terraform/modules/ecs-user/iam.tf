@@ -82,6 +82,17 @@ data "aws_iam_policy_document" "user_host" {
   }
 
   statement {
+    sid = "AllowUserHostListPackagesBucket"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.s3_packages.bucket}",
+    ]
+  }
+
+  statement {
     sid = "AllowUserHostDownloadPackages"
     effect = "Allow"
     actions = [
