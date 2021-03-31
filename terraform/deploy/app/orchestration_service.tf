@@ -6,6 +6,7 @@ module "ecs-fargate-task-definition" {
   name_prefix                  = var.name_prefix
   container_name               = var.name_prefix
   container_image              = local.container_image
+  container_image_tag          = var.container_image_tag[local.environment]
   container_port               = var.container_port
   container_cpu                = var.container_cpu
   container_memory             = var.container_memory
@@ -228,8 +229,8 @@ module "ecs-user-host" {
   github_proxy_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.internet_proxy_sg
 
   s3_packages = {
-    bucket = data.terraform_remote_state.common.outputs.config_bucket.id
-    cmk_arn = data.terraform_remote_state.common.outputs.config_bucket_cmk.arn
+    bucket     = data.terraform_remote_state.common.outputs.config_bucket.id
+    cmk_arn    = data.terraform_remote_state.common.outputs.config_bucket_cmk.arn
     key_prefix = "component/aws-analytical-env/r-packages"
   }
 

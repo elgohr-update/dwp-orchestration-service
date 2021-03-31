@@ -271,3 +271,16 @@ variable "lb_health_check_path" {
   type        = string
   default     = "/"
 }
+
+variable "container_image_tag" {
+  description = "(Optional) Override the orchestration engine docker image tag version in each environment"
+  type        = map
+  default = {
+    development = "0.0.190"
+    qa          = "0.0.190"
+    integration = "0.0.190"
+    preprod     = "0.0.190"
+    production  = "0.0.190"
+  }
+}
+
