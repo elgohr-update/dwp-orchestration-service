@@ -13,7 +13,9 @@ import kotlin.reflect.full.declaredMemberProperties
 data class DeployRequest @JsonCreator constructor(
         val jupyterCpu: Int = 256,
         val jupyterMemory: Int = 896,
-        val additionalPermissions: List<String> = emptyList()
+        val additionalPermissions: List<String> = emptyList(),
+        val screenWidth: Int = 1920,
+        val screenHeight: Int = 1080,
 )
 
 data class CleanupRequest(
@@ -73,6 +75,8 @@ data class UserContainerProperties(
         val githubProxyUrl: String,
         val githubUrl: String,
         val livyProxyUrl: String?,
+        val screenWidth: Int,
+        val screenHeight: Int,
 )
 
 data class TextSSHKeyPair(

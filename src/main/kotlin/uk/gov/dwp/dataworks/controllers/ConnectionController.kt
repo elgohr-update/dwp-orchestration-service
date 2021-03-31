@@ -133,7 +133,9 @@ class ConnectionController {
                     cognitoGroups,
                     requestBody.jupyterCpu,
                     requestBody.jupyterMemory,
-                    requestBody.additionalPermissions)
+                    requestBody.additionalPermissions,
+                    requestBody.screenWidth,
+                    requestBody.screenHeight)
         }
         return "${configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}/"
     }

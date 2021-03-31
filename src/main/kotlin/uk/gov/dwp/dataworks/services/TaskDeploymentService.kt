@@ -58,7 +58,8 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(cognitoToken: String, userName: String, cognitoGroups: List<String>, jupyterCpu: Int, jupyterMemory: Int, additionalPermissions: List<String>) {
+    fun runContainers(cognitoToken: String, userName: String, cognitoGroups: List<String>, jupyterCpu: Int,
+                      jupyterMemory: Int, additionalPermissions: List<String>, screenWidth: Int, screenHeight: Int) {
         val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
@@ -145,7 +146,9 @@ class TaskDeploymentService {
                     packagesVolume.name(),
                     githubProxyUrl,
                     configurationResolver.getStringConfig(ConfigKey.GITHUB_URL).replaceFirst(Regex("^http[s]?://"),""),
-                    configurationResolver.getStringConfig(ConfigKey.LIVY_PROXY_URL)
+                    configurationResolver.getStringConfig(ConfigKey.LIVY_PROXY_URL),
+                    screenWidth,
+                    screenHeight
             )
 
             val containerDefinitions = buildContainerDefinitions(userContainerProperties)
@@ -188,7 +191,7 @@ class TaskDeploymentService {
 
     private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
-        val screenSize = 1920 to 1080
+        val screenSize = containerProperties.screenWidth to containerProperties.screenHeight
         val tabs = mutableMapOf<Int, String>()
         val sshKeyPair = this.generateSshKeyPair()
         val hasFileTransferDownloadPermission = authorizationService

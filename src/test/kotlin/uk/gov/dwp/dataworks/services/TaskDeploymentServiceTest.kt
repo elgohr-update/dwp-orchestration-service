@@ -96,7 +96,8 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has tablist to open`() {
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -115,7 +116,8 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has githubUrl to open for Jupyter`() {
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -137,7 +139,8 @@ class TaskDeploymentServiceTest {
             )
         ).doReturn(true)
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),
+                100, 200, emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -165,7 +168,8 @@ class TaskDeploymentServiceTest {
             )
         ).doReturn(true)
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -193,7 +197,8 @@ class TaskDeploymentServiceTest {
             )
         ).then { it.arguments[1] == ToolingPermission.FILE_TRANSFER_DOWNLOAD }
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100, 200, emptyList())
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -205,6 +210,30 @@ class TaskDeploymentServiceTest {
         assertThat(guacamoleClientParams).contains("sftp-disable-download=false")
         assertThat(guacamoleClientParams).contains("sftp-disable-upload=true")
 
+    }
+
+    @Test
+    fun `Task definition configures screensize correctly`(){
+
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
+                200, emptyList(), 1024, 768)
+
+        val captor = argumentCaptor<TaskDefinition>()
+        verify(awsCommunicator, times(2)).registerTaskDefinition(any(), captor.capture(), any())
+
+        fun validateScreenSize(taskDef: TaskDefinition, screenWidth: Int, screenHeight: Int) {
+            val containerParams = taskDef.containerDefinitions().first { it.name() == "headless_chrome" }.environment()
+            val chromeClientParams = containerParams.first { it.name() == "CHROME_OPTS" }.value()
+            val vncScreenSize = containerParams.first { it.name() == "VNC_SCREEN_SIZE" }.value()
+
+            assertThat(chromeClientParams).contains("--window-size=${screenWidth},${screenHeight}")
+            assertThat(vncScreenSize).isEqualTo("${screenWidth}x${screenHeight}")
+        }
+
+        validateScreenSize(captor.firstValue, 1280, 1024)
+        validateScreenSize(captor.secondValue, 1024, 768)
     }
 
     @Configuration
