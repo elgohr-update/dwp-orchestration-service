@@ -277,10 +277,10 @@ variable "container_image_tag" {
   type        = map
   default = {
     development = "0.0.192"
-    qa          = "0.0.190"
-    integration = "0.0.190"
-    preprod     = "0.0.190"
-    production  = "0.0.190"
+    qa          = "0.0.192"
+    integration = "0.0.192"
+    preprod     = "0.0.192"
+    production  = "0.0.192"
   }
 }
 
