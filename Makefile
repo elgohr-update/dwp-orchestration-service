@@ -35,3 +35,13 @@ terraform:
 		python3 bootstrap_terraform.py; \
 	}
 	terraform fmt -recursive
+
+
+.PHONY: integration
+integration:
+	@{ \
+		CONTAINER_ID=$(shell docker run -e DEBUG=1 -e SERVICES="dynamodb,iam,kms" -p 4566:4566 -d localstack/localstack:latest); \
+		sleep 5; \
+		AWS_ACCESS_KEY_ID="foo" AWS_SECRET_ACCESS_KEY="bar" ./gradlew integration; \
+		docker rm -f $${CONTAINER_ID} ; \
+	}

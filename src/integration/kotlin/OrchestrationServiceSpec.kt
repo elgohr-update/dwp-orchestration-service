@@ -64,11 +64,14 @@ import java.net.URI
             "orchestrationService.ecr_endpoint=endpoint",
             "orchestrationService.debug=false",
             "orchestrationService.jupyterhub_bucket_arn=arn:aws:s3:::bucketTest",
+            "orchestrationService.jupyterhub_bucket_kms_arn=arn:aws:kms:us-east-1:000000000000:key/12345678-1232-1234-1234-123456789012",
             "TAGS={\"Name\":\"TaskName\", \"Fruit\": \"Cherry\", \"Colour\":\"Red\"}",
             "orchestrationService.data_science_git_repo=codecommit_repo",
             "orchestrationService.push_gateway_host=testlb",
             "orchestrationService.push_gateway_cron=*/5 * * * *",
-            "orchestrationService.github_proxy_url=proxy.tld:3128"
+            "orchestrationService.github_proxy_url=proxy.tld:3128",
+            "orchestrationService.github_url=http://github.tld",
+            "orchestrationService.livy_proxy_url=http://livy.tld"
         ],
         controllers = [
             ConnectionController::class,
@@ -155,7 +158,7 @@ class OrchestrationServiceSpec {
             if (!awsCommunicator.getDynamoDeploymentEntry(username).hasItem()) throw Exception()
         } catch (e : Exception){
             println("Failed setting up existing $username")
-            e.printStackTrace()
+            throw e
         }
     }
 

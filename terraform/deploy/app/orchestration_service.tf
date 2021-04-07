@@ -87,6 +87,10 @@ module "ecs-fargate-task-definition" {
       value = module.jupyter_s3_storage.jupyterhub_bucket.arn
     },
     {
+      name  = "orchestrationService.jupyterhub_bucket_kms_arn"
+      value = module.jupyter_s3_storage.s3fs_bucket_kms_arn
+    },
+    {
       name  = "orchestrationService.aws_account_number"
       value = local.account[local.environment]
     },

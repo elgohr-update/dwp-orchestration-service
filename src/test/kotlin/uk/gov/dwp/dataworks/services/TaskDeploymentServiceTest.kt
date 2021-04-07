@@ -42,6 +42,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEn
                               "orchestrationService.ecr_endpoint=endpoint",
                               "orchestrationService.debug=false",
                               "orchestrationService.jupyterhub_bucket_arn=testArn",
+                              "orchestrationService.jupyterhub_bucket_kms_arn=jupyterdefaultarn",
                               "orchestrationService.push_gateway_host=testlb",
                               "orchestrationService.push_gateway_cron=*/5 * * * *",
                               "orchestrationService.github_proxy_url=proxy.tld:3128",
@@ -74,23 +75,28 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Can work through debug endpoint without cognitoGroups`() {
-        val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser", configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER))
+        val emptyCognitoGroup = taskDeploymentService.parseMap(emptyList(), "testUser", configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER), "jupyterdefaultarn")
+        val expected = mapOf(Pair("jupyterkmsaccessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home", "jupyterdefaultarn")),
+            Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home", "jupyterdefaultarn")),
+            Pair("jupyters3list", listOf("testArn")))
         assertThat(emptyCognitoGroup)
-                .isEqualTo(mapOf(Pair("jupyterkmsaccessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home")), Pair("jupyters3accessdocument", listOf("testArn/*", "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUser-home")), Pair("jupyters3list", listOf("testArn"))))
+                .isEqualTo(expected)
     }
 
     @Test
     fun `Creates correct IAM policy for user`() {
-        val returnedIamPolicy = taskDeploymentService.parseMap(listOf("testGroup"), "testUsername", "000")
+        val returnedIamPolicy = taskDeploymentService.parseMap(listOf("testGroup"), "testUsername", "000", "userS3KmsArn")
         assertThat(returnedIamPolicy).isEqualTo(mapOf(
                 "jupyterkmsaccessdocument" to listOf(
                         "arn:aws:kms:eu-west-2:000:key/testkeyarn-testGroup-shared",
                         "testArn/*",
-                        "arn:aws:kms:eu-west-2:000:key/testkeyarn-testUsername-home"),
+                        "arn:aws:kms:eu-west-2:000:key/testkeyarn-testUsername-home",
+                        "userS3KmsArn"),
                 "jupyters3accessdocument" to listOf(
                         "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testGroup-shared",
                         "testArn/*",
-                        "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUsername-home"),
+                        "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-testUsername-home",
+                        "userS3KmsArn"),
                 "jupyters3list" to listOf("testArn")))
     }
 

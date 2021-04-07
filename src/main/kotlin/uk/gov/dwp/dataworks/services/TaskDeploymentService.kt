@@ -71,6 +71,7 @@ class TaskDeploymentService {
         val ecsClusterName = configurationResolver.getStringConfig(ConfigKey.ECS_CLUSTER_NAME)
         val emrClusterHostname = configurationResolver.getStringConfig(ConfigKey.EMR_CLUSTER_HOSTNAME)
         val userS3Bucket = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
+        val userS3BucketKmsArn = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_KMS_ARN)
         val accountNumber = configurationResolver.getStringConfig(ConfigKey.AWS_ACCOUNT_NUMBER)
         val gitRepo = configurationResolver.getStringConfig(ConfigKey.DATA_SCIENCE_GIT_REPO)
         val githubProxyUrl = configurationResolver.getStringConfig(ConfigKey.GITHUB_PROXY_URL)
@@ -117,7 +118,7 @@ class TaskDeploymentService {
             val iamPolicy = awsCommunicator.createIamPolicy(correlationId, userName, taskRolePolicyString, "iamPolicyUserArn")
             val iamRole = awsCommunicator.createIamRole(correlationId, userName, taskAssumeRoleString)
             awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
-            awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber), iamRole)
+            awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber, userS3BucketKmsArn), iamRole)
 
             val s3fsVolume = Volume.builder()
                     .name("s3fs")
@@ -283,6 +284,7 @@ class TaskDeploymentService {
                         "DISABLE_AUTH" to "true",
                         "GITHUB_URL" to containerProperties.githubUrl,
                         "JWT_TOKEN" to containerProperties.cognitoToken,
+                        "S3_HOME_PATH" to "s3://${containerProperties.userS3Bucket.substringAfterLast(":")}/user/${containerProperties.userName}",
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
@@ -475,8 +477,8 @@ class TaskDeploymentService {
         return pairs.filterNotNull().map { KeyValuePair.builder().name(it.first).value(it.second).build() }
     }
 
-    fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String, accountId: String): Policy {
-        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, parseMap(cognitoGroups, userName, accountId), "Resource")
+    fun setupJupyterIam(cognitoGroups: List<String>, userName: String, correlationId: String, accountId: String, userS3KmsArn: String): Policy {
+        val jupyterBucketAccessRolePolicyString = awsParsing.parsePolicyDocument(jupyterBucketAccessDocument, parseMap(cognitoGroups, userName, accountId, userS3KmsArn), "Resource")
         return awsCommunicator.createIamPolicy(correlationId, userName, jupyterBucketAccessRolePolicyString, "iamPolicyTaskArn")
     }
 
@@ -484,11 +486,15 @@ class TaskDeploymentService {
     *   Helper method to parse environment variables into arn strings and return lists of the values paired
     *   with the relevant SID of the IAM statement
      */
-    fun parseMap(cognitoGroups: List<String>, userName: String, accountId: String): Map<String, List<String>> {
+    fun parseMap(cognitoGroups: List<String>, userName: String, accountId: String, userS3KmsArn: String): Map<String, List<String>> {
         val jupyterS3Arn = configurationResolver.getStringConfig(ConfigKey.JUPYTER_S3_ARN)
         val folderAccess = cognitoGroups
                 .map { awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountId:alias/$it-shared") }
-                .plus(listOf("$jupyterS3Arn/*", awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountId:alias/$userName-home")))
+                .plus(listOf(
+                    "$jupyterS3Arn/*",
+                    awsCommunicator.getKmsKeyArn("arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountId:alias/$userName-home"),
+                    userS3KmsArn,
+                ))
         return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyterkmsaccessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
     }
 
