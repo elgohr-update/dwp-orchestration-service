@@ -117,6 +117,19 @@ EOF
 EOF
   }
 
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
+    # Configure swap
+    dd if=/dev/zero of=/swapfile bs=128M count=256
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+EOF
+  }
+
 }
 
 resource "aws_launch_template" "user_host" {
@@ -134,7 +147,7 @@ resource "aws_launch_template" "user_host" {
     ebs {
       delete_on_termination = true
       encrypted             = true
-      volume_size           = 32
+      volume_size           = 64
     }
   }
 

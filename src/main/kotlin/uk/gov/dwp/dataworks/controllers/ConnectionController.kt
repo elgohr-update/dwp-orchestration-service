@@ -131,8 +131,6 @@ class ConnectionController {
                     token,
                     userName,
                     cognitoGroups,
-                    requestBody.jupyterCpu,
-                    requestBody.jupyterMemory,
                     requestBody.additionalPermissions,
                     requestBody.screenWidth,
                     requestBody.screenHeight)

@@ -11,8 +11,6 @@ import kotlin.reflect.full.declaredMemberProperties
 
 
 data class DeployRequest @JsonCreator constructor(
-        val jupyterCpu: Int = 256,
-        val jupyterMemory: Int = 896,
         val additionalPermissions: List<String> = emptyList(),
         val screenWidth: Int = 1920,
         val screenHeight: Int = 1080,
@@ -61,8 +59,6 @@ data class UserContainerProperties(
         val userName: String,
         val cognitoGroups: List<String>,
         val emrHostname: String,
-        val jupyterCpu: Int,
-        val jupyterMemory: Int,
         val guacamolePort: Int,
         val userS3Bucket: String,
         val kmsHome: String,

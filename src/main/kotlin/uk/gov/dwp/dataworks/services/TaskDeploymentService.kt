@@ -21,6 +21,7 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 import java.util.UUID
+import kotlin.math.roundToInt
 
 @Service
 class TaskDeploymentService {
@@ -58,8 +59,7 @@ class TaskDeploymentService {
         val logger: DataworksLogger = DataworksLogger(LoggerFactory.getLogger(TaskDeploymentService::class.java))
     }
 
-    fun runContainers(cognitoToken: String, userName: String, cognitoGroups: List<String>, jupyterCpu: Int,
-                      jupyterMemory: Int, additionalPermissions: List<String>, screenWidth: Int, screenHeight: Int) {
+    fun runContainers(cognitoToken: String, userName: String, cognitoGroups: List<String>, additionalPermissions: List<String>, screenWidth: Int, screenHeight: Int) {
         val correlationId = "$userName-${UUID.randomUUID()}"
         // Retrieve required params from environment
         val containerPort = Integer.parseInt(configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_PORT))
@@ -134,8 +134,6 @@ class TaskDeploymentService {
                     userName,
                     cognitoGroups,
                     emrClusterHostname,
-                    jupyterCpu,
-                    jupyterMemory,
                     containerPort,
                     userS3Bucket,
                     "arn:aws:kms:${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}:$accountNumber:alias/$userName-home",
@@ -203,6 +201,11 @@ class TaskDeploymentService {
         val hasClipboardOutPermission = authorizationService
             .hasUserToolingPermission(containerProperties.userName, ToolingPermission.CLIPBOARD_OUT)
 
+        val swapLinuxParameters = LinuxParameters.builder()
+            .maxSwap(2048)
+            .swappiness(60)
+            .build()
+
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
             ".${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.compute.internal",
@@ -252,8 +255,8 @@ class TaskDeploymentService {
         val hue = ContainerDefinition.builder()
                 .name("hue")
                 .image("$ecrEndpoint/aws-analytical-env/hue")
-                .cpu(containerProperties.jupyterCpu)
-                .memory(containerProperties.jupyterMemory)
+                .cpu(256)
+                .memory(getMemoryForCpuUnits(256))
                 .essential(false)
                 .portMappings(PortMapping.builder().containerPort(8888).hostPort(8888).build())
                 .environment(pairsToKeyValuePairs(
@@ -274,8 +277,8 @@ class TaskDeploymentService {
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss")
-                .cpu(containerProperties.jupyterCpu)
-                .memory(containerProperties.jupyterMemory)
+                .cpu(1024)
+                .memory(getMemoryForCpuUnits(1024))
                 .essential(false)
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
                 .environment(pairsToKeyValuePairs(
@@ -290,6 +293,7 @@ class TaskDeploymentService {
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .mountPoints(MountPoint.builder().containerPath("/mnt/packages").sourceVolume(containerProperties.packagesVolumeName).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
+                .linuxParameters(swapLinuxParameters)
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
@@ -305,8 +309,8 @@ class TaskDeploymentService {
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
                 .image("$ecrEndpoint/aws-analytical-env/jupyterhub")
-                .cpu(containerProperties.jupyterCpu)
-                .memory(containerProperties.jupyterMemory)
+                .cpu(512)
+                .memory(getMemoryForCpuUnits(512))
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
                 .environment(pairsToKeyValuePairs(
@@ -323,6 +327,7 @@ class TaskDeploymentService {
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "jupyterHub"))
                 .healthCheck(jupyterhubHealthCheck)
                 .dependsOn(s3fsContainerDependency)
+                .linuxParameters(swapLinuxParameters)
                 .build()
 
         tabs.put(10, "https://localhost:8000")
@@ -344,7 +349,7 @@ class TaskDeploymentService {
             .name("headless_chrome")
             .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
             .cpu(512)
-            .memory(2048)
+            .memory(getMemoryForCpuUnits(512))
             .essential(true)
             .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
             .linuxParameters(linuxParameters)
@@ -379,6 +384,7 @@ class TaskDeploymentService {
             .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
             .healthCheck(headlessChromeHealthCheck)
             .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
+            .linuxParameters(swapLinuxParameters)
             .build()
 
         val guacdHealthCheck = HealthCheck.builder()
@@ -392,7 +398,7 @@ class TaskDeploymentService {
                 .name("guacd")
                 .image("$ecrEndpoint/aws-analytical-env/guacd")
                 .cpu(64)
-                .memory(128)
+                .memory(getMemoryForCpuUnits(64))
                 .essential(true)
                 .portMappings(PortMapping.builder().hostPort(4822).containerPort(4822).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacd"))
@@ -404,7 +410,7 @@ class TaskDeploymentService {
             .name("guacamole")
             .image("$ecrEndpoint/aws-analytical-env/guacamole")
             .cpu(256)
-            .memory(896)
+            .memory(getMemoryForCpuUnits(256))
             .essential(true)
             .environment(
                 pairsToKeyValuePairs(
@@ -451,7 +457,7 @@ class TaskDeploymentService {
                 .name("s3fs")
                 .image("$ecrEndpoint/aws-analytical-env/s3fs")
                 .cpu(64)
-                .memory(128)
+                .memory(getMemoryForCpuUnits(64))
                 .essential(true)
                 .environment(pairsToKeyValuePairs(
                         "KMS_HOME" to containerProperties.kmsHome,
@@ -496,6 +502,10 @@ class TaskDeploymentService {
                     userS3KmsArn,
                 ))
         return mapOf(Pair("jupyters3accessdocument", folderAccess), Pair("jupyterkmsaccessdocument", folderAccess), Pair("jupyters3list", listOf(jupyterS3Arn)))
+    }
+
+    fun getMemoryForCpuUnits(cpuUnits: Int): Int{
+        return (cpuUnits * 4 * 0.9).roundToInt()
     }
 
     fun generateSshKeyPair(): TextSSHKeyPair {

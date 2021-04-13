@@ -102,8 +102,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has tablist to open`() {
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -122,8 +121,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has githubUrl to open for Jupyter`() {
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -146,7 +144,7 @@ class TaskDeploymentServiceTest {
         ).doReturn(true)
 
         taskDeploymentService.runContainers("abcde", "username", listOf("team"),
-                100, 200, emptyList(), 1280, 1024)
+                 emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -174,8 +172,7 @@ class TaskDeploymentServiceTest {
             )
         ).doReturn(true)
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -203,8 +200,7 @@ class TaskDeploymentServiceTest {
             )
         ).then { it.arguments[1] == ToolingPermission.FILE_TRANSFER_DOWNLOAD }
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val taskDef = captor.firstValue
@@ -221,10 +217,8 @@ class TaskDeploymentServiceTest {
     @Test
     fun `Task definition configures screensize correctly`(){
 
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1280, 1024)
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"), 100,
-                200, emptyList(), 1024, 768)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1024, 768)
 
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator, times(2)).registerTaskDefinition(any(), captor.capture(), any())
