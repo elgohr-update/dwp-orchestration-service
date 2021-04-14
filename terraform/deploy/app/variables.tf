@@ -276,11 +276,11 @@ variable "container_image_tag" {
   description = "(Optional) Override the orchestration engine docker image tag version in each environment"
   type        = map(string)
   default = {
-    development = "0.0.197"
-    qa          = "0.0.197"
-    integration = "0.0.197"
-    preprod     = "0.0.197"
-    production  = "0.0.197"
+    development = "0.0.195"
+    qa          = "0.0.195"
+    integration = "0.0.195"
+    preprod     = "0.0.195"
+    production  = "0.0.195"
   }
 }
 
