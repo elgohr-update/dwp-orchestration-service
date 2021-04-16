@@ -287,7 +287,7 @@ class TaskDeploymentService {
                         "DISABLE_AUTH" to "true",
                         "GITHUB_URL" to containerProperties.githubUrl,
                         "JWT_TOKEN" to containerProperties.cognitoToken,
-                        "S3_HOME_PATH" to "s3://${containerProperties.userS3Bucket.substringAfterLast(":")}/user/${containerProperties.userName}",
+                        "S3_HOME_PATH" to "s3://${containerProperties.userS3Bucket.substringAfterLast(":")}/home/${containerProperties.userName}",
                         *proxyEnvVariables
                 ))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
@@ -339,8 +339,6 @@ class TaskDeploymentService {
                 .startPeriod(20)
                 .build()
 
-        val linuxParameters: LinuxParameters = LinuxParameters.builder().sharedMemorySize(2048).build()
-
         tabs.put(40,configurationResolver.getStringConfig(ConfigKey.GITHUB_URL))
         
         tabs.put(50, "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken)
@@ -352,7 +350,7 @@ class TaskDeploymentService {
             .memory(getMemoryForCpuUnits(512))
             .essential(true)
             .portMappings(PortMapping.builder().containerPort(5900).hostPort(5900).build())
-            .linuxParameters(linuxParameters)
+            .linuxParameters(swapLinuxParameters.copy { it.sharedMemorySize(2048) })
             .environment(
                 pairsToKeyValuePairs(
                     "VNC_OPTS" to """-rfbport 5900 -xkb -noxrecord -noxfixes -noxdamage -display :1 -nopw -wait 5 ${if (hasClipboardOutPermission) "" else "-noclipboard"}""",
@@ -384,7 +382,6 @@ class TaskDeploymentService {
             .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
             .healthCheck(headlessChromeHealthCheck)
             .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
-            .linuxParameters(swapLinuxParameters)
             .build()
 
         val guacdHealthCheck = HealthCheck.builder()
