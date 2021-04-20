@@ -27,8 +27,40 @@ module "ecs-fargate-task-definition" {
   }
   environment = [
     {
+      name  = "HUE_TAG"
+      value = var.component_tags[local.environment].hue
+    },
+    {
+      name  = "RSTUDIO_OSS_TAG"
+      value = var.component_tags[local.environment].rstudio_oss
+    },
+    {
+      name  = "JUPYTER_HUB_TAG"
+      value = var.component_tags[local.environment].jupyter_hub
+    },
+    {
+      name  = "HEADLESS_CHROME_TAG"
+      value = var.component_tags[local.environment].headless_chrome
+    },
+    {
+      name  = "GUACD_TAG"
+      value = var.component_tags[local.environment].guacd
+    },
+    {
+      name  = "GUACAMOLE_TAG"
+      value = var.component_tags[local.environment].guacamole
+    },
+    {
+      name  = "S3FS_TAG"
+      value = var.component_tags[local.environment].s3fs
+    },
+    {
       name  = "orchestrationService.debug"
       value = local.environment == "development" ? "true" : "false"
+    },
+    { 
+      name = "sftp_user"
+      value = var.sftp_user[local.environment]
     },
     {
       name  = "orchestrationService.load_balancer_name"

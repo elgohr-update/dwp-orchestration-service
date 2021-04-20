@@ -252,9 +252,10 @@ class TaskDeploymentService {
                 .condition(ContainerCondition.HEALTHY)
                 .build()
 
+        val hueTag: String = System.getenv("HUE_TAG") ?: "latest"
         val hue = ContainerDefinition.builder()
                 .name("hue")
-                .image("$ecrEndpoint/aws-analytical-env/hue")
+                .image("$ecrEndpoint/aws-analytical-env/hue:$hueTag")
                 .cpu(256)
                 .memory(getMemoryForCpuUnits(256))
                 .essential(false)
@@ -274,9 +275,10 @@ class TaskDeploymentService {
 
         tabs.put(30, "https://localhost:8888")
 
+        val rstudioOssTag: String = System.getenv("RSTUDIO_OSS_TAG") ?: "latest"
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
-                .image("$ecrEndpoint/aws-analytical-env/rstudio-oss")
+                .image("$ecrEndpoint/aws-analytical-env/rstudio-oss:$rstudioOssTag")
                 .cpu(1024)
                 .memory(getMemoryForCpuUnits(1024))
                 .essential(false)
@@ -306,9 +308,10 @@ class TaskDeploymentService {
                 .startPeriod(20)
                 .build()
 
+        val jupyterHubTag: String = System.getenv("JUPYTER_HUB_TAG") ?: "latest"
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
-                .image("$ecrEndpoint/aws-analytical-env/jupyterhub")
+                .image("$ecrEndpoint/aws-analytical-env/jupyterhub:$jupyterHubTag")
                 .cpu(512)
                 .memory(getMemoryForCpuUnits(512))
                 .essential(true)
@@ -343,9 +346,10 @@ class TaskDeploymentService {
         
         tabs.put(50, "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken)
 
+        val headlessChromeTag: String = System.getenv("HEADLESS_CHROME_TAG") ?: "latest"
         val headlessChrome = ContainerDefinition.builder()
             .name("headless_chrome")
-            .image("$ecrEndpoint/aws-analytical-env/headless-chrome")
+            .image("$ecrEndpoint/aws-analytical-env/headless-chrome:$headlessChromeTag")
             .cpu(512)
             .memory(getMemoryForCpuUnits(512))
             .essential(true)
@@ -391,9 +395,11 @@ class TaskDeploymentService {
                 .startPeriod(20)
                 .build()
 
+        
+        val guacdTag: String = System.getenv("GUACD_TAG") ?: "latest"
         val guacd = ContainerDefinition.builder()
                 .name("guacd")
-                .image("$ecrEndpoint/aws-analytical-env/guacd")
+                .image("$ecrEndpoint/aws-analytical-env/guacd:$guacdTag")
                 .cpu(64)
                 .memory(getMemoryForCpuUnits(64))
                 .essential(true)
@@ -402,10 +408,12 @@ class TaskDeploymentService {
                 .healthCheck(guacdHealthCheck)
                 .dependsOn(headlessChromeDependency)
                 .build()
-
+                
+        val guacamoleTag: String = System.getenv("GUACAMOLE_TAG") ?: "latest"
+        val sftpUser: String = System.getenv("sftp_user") ?: "user"
         val guacamole = ContainerDefinition.builder()
             .name("guacamole")
-            .image("$ecrEndpoint/aws-analytical-env/guacamole")
+            .image("$ecrEndpoint/aws-analytical-env/guacamole:$guacamoleTag")
             .cpu(256)
             .memory(getMemoryForCpuUnits(256))
             .essential(true)
@@ -422,7 +430,7 @@ class TaskDeploymentService {
                         "disable-copy=false",
                         "enable-sftp=true",
                         "sftp-port=8022",
-                        "sftp-username=alpine",
+                        "sftp-username=$sftpUser",
                         "sftp-root-directory=/mnt/s3fs",
                         "sftp-directory=/mnt/s3fs/s3-home",
                         "sftp-disable-download=${if(!hasFileTransferDownloadPermission) "true" else "false"}",
@@ -450,9 +458,10 @@ class TaskDeploymentService {
                 .timeout(5)
                 .build()
 
+        val s3fsTag: String = System.getenv("S3FS_TAG") ?: "latest"
         val s3fs = ContainerDefinition.builder()
                 .name("s3fs")
-                .image("$ecrEndpoint/aws-analytical-env/s3fs")
+                .image("$ecrEndpoint/aws-analytical-env/s3fs:$s3fsTag")
                 .cpu(64)
                 .memory(getMemoryForCpuUnits(64))
                 .essential(true)

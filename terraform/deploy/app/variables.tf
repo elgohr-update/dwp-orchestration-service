@@ -284,3 +284,65 @@ variable "container_image_tag" {
   }
 }
 
+variable "component_tags" {
+  type = map(map(string))
+  default = {
+    development = {
+      hue              = "latest"
+      rstudio_oss      = "latest"
+      jupyter_hub      = "latest"
+      headless_chrome  = "latest"
+      guacd            = "latest"
+      guacamole        = "latest"
+      s3fs             = "latest"
+    }
+    qa = {
+      hue              = "latest"
+      rstudio_oss      = "latest"
+      jupyter_hub      = "latest"
+      headless_chrome  = "latest"
+      guacd            = "latest"
+      guacamole        = "latest"
+      s3fs             = "latest"
+    }
+    integration = {
+      hue              = "latest"
+      rstudio_oss      = "latest"
+      jupyter_hub      = "latest"
+      headless_chrome  = "latest"
+      guacd            = "latest"
+      guacamole        = "latest"
+      s3fs             = "latest"
+    }
+    preprod = {
+      hue              = "latest"
+      rstudio_oss      = "latest"
+      jupyter_hub      = "latest"
+      headless_chrome  = "latest"
+      guacd            = "latest"
+      guacamole        = "latest"
+      s3fs             = "latest"
+    }
+    production = {
+      hue              = "latest"
+      rstudio_oss      = "latest"
+      jupyter_hub      = "latest"
+      headless_chrome  = "latest"
+      guacd            = "latest"
+      guacamole        = "latest"
+      s3fs             = "latest"
+    }
+  }
+}
+
+variable "sftp_user" {
+  description = "SFTP Username for the headless chrome"
+  type        = map(string)
+  default = {
+    development = "alpine"
+    qa          = "alpine"
+    integration = "alpine"
+    preprod     = "alpine"
+    production  = "alpine"
+  }
+}
