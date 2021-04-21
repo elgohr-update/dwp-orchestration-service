@@ -291,7 +291,7 @@ variable "component_tags" {
       hue              = "0.0.77"
       rstudio_oss      = "0.0.36"
       jupyter_hub      = "0.0.64"
-      headless_chrome  = "0.0.13"
+      headless_chrome  = "0.0.14"
       guacd            = "0.0.21"
       guacamole        = "0.0.21"
       s3fs             = "0.0.81"
@@ -339,7 +339,7 @@ variable "sftp_user" {
   description = "SFTP Username for the headless chrome"
   type        = map(string)
   default = {
-    development = "alpine"
+    development = "user"
     qa          = "alpine"
     integration = "alpine"
     preprod     = "alpine"
