@@ -277,10 +277,10 @@ variable "container_image_tag" {
   type        = map(string)
   default = {
     development = "0.0.202"
-    qa          = "0.0.200"
-    integration = "0.0.200"
-    preprod     = "0.0.200"
-    production  = "0.0.200"
+    qa          = "0.0.202"
+    integration = "0.0.202"
+    preprod     = "0.0.202"
+    production  = "0.0.202"
   }
 }
 
@@ -297,40 +297,40 @@ variable "component_tags" {
       s3fs             = "0.0.81"
     }
     qa = {
-      hue              = "latest"
-      rstudio_oss      = "latest"
-      jupyter_hub      = "latest"
-      headless_chrome  = "latest"
-      guacd            = "latest"
-      guacamole        = "latest"
-      s3fs             = "latest"
+      hue              = "0.0.77"
+      rstudio_oss      = "0.0.36"
+      jupyter_hub      = "0.0.64"
+      headless_chrome  = "0.0.13"
+      guacd            = "0.0.21"
+      guacamole        = "0.0.21"
+      s3fs             = "0.0.81"
     }
     integration = {
-      hue              = "latest"
-      rstudio_oss      = "latest"
-      jupyter_hub      = "latest"
-      headless_chrome  = "latest"
-      guacd            = "latest"
-      guacamole        = "latest"
-      s3fs             = "latest"
+      hue              = "0.0.77"
+      rstudio_oss      = "0.0.36"
+      jupyter_hub      = "0.0.64"
+      headless_chrome  = "0.0.13"
+      guacd            = "0.0.21"
+      guacamole        = "0.0.21"
+      s3fs             = "0.0.81"
     }
     preprod = {
-      hue              = "latest"
-      rstudio_oss      = "latest"
-      jupyter_hub      = "latest"
-      headless_chrome  = "latest"
-      guacd            = "latest"
-      guacamole        = "latest"
-      s3fs             = "latest"
+      hue              = "0.0.77"
+      rstudio_oss      = "0.0.36"
+      jupyter_hub      = "0.0.64"
+      headless_chrome  = "0.0.13"
+      guacd            = "0.0.21"
+      guacamole        = "0.0.21"
+      s3fs             = "0.0.81"
     }
     production = {
-      hue              = "latest"
-      rstudio_oss      = "latest"
-      jupyter_hub      = "latest"
-      headless_chrome  = "latest"
-      guacd            = "latest"
-      guacamole        = "latest"
-      s3fs             = "latest"
+      hue              = "0.0.77"
+      rstudio_oss      = "0.0.36"
+      jupyter_hub      = "0.0.64"
+      headless_chrome  = "0.0.13"
+      guacd            = "0.0.21"
+      guacamole        = "0.0.21"
+      s3fs             = "0.0.81"
     }
   }
 }
