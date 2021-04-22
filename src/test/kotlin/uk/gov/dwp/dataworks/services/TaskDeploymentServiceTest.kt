@@ -1,5 +1,7 @@
 package uk.gov.dwp.dataworks.services
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.nhaarman.mockitokotlin2.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -22,6 +24,7 @@ import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.Application
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
+import uk.gov.dwp.dataworks.ContainerTab
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class, TaskDeploymentServiceTest.AwsCommunicatorConfig::class])
@@ -110,12 +113,14 @@ class TaskDeploymentServiceTest {
         val chromeEnvs = def.containerDefinitions()
                 .first { x : ContainerDefinition -> x.name() == "headless_chrome" }
                 .environment()
-        assertThat(chromeEnvs.first { k -> k.name() == "CHROME_OPTS" }
-                .value()).contains(" https://localhost:8000 ",
-                                   " https://localhost:7000 ",
-                                   " https://localhost:8888 ",
-                                   " https://github.com ",
-                                   " https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde ")
+        val containerInfo = jacksonObjectMapper().readValue<Array<ContainerTab>>(chromeEnvs.first { k -> k.name() == "CONTAINER_INFO"}.value())
+        assertThat(containerInfo.map { it.url })
+            .contains("https://localhost:8000",
+               "https://localhost:7000",
+               "https://localhost:8888",
+               "https://github.com",
+               "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde"
+            )
 
     }
 

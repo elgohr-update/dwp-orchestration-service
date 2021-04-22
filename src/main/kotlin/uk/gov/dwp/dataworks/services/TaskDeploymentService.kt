@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
+import uk.gov.dwp.dataworks.ContainerTab
 import uk.gov.dwp.dataworks.TextSSHKeyPair
 import uk.gov.dwp.dataworks.UserContainerProperties
 import uk.gov.dwp.dataworks.aws.AwsCommunicator
@@ -191,7 +192,7 @@ class TaskDeploymentService {
     private fun buildContainerDefinitions(containerProperties: UserContainerProperties): Collection<ContainerDefinition> {
         val ecrEndpoint = configurationResolver.getStringConfig(ConfigKey.ECR_ENDPOINT)
         val screenSize = containerProperties.screenWidth to containerProperties.screenHeight
-        val tabs = mutableMapOf<Int, String>()
+        val tabs = mutableMapOf<Int, ContainerTab>()
         val sshKeyPair = this.generateSshKeyPair()
         val hasFileTransferDownloadPermission = authorizationService
             .hasUserToolingPermission(containerProperties.userName, ToolingPermission.FILE_TRANSFER_DOWNLOAD)
@@ -227,21 +228,6 @@ class TaskDeploymentService {
                 .condition(ContainerCondition.HEALTHY)
                 .build()
 
-        val jupyterhubContainerDependency = ContainerDependency.builder()
-                .containerName("jupyterHub")
-                .condition(ContainerCondition.HEALTHY)
-                .build()
-
-        val rstudioOssContainerDependency = ContainerDependency.builder()
-                .containerName("rstudio-oss")
-                .condition(ContainerCondition.START)
-                .build()
-
-        val hueContainerDependency = ContainerDependency.builder()
-                .containerName("hue")
-                .condition(ContainerCondition.START)
-                .build()
-
         val s3fsContainerDependency = ContainerDependency.builder()
                 .containerName("s3fs")
                 .condition(ContainerCondition.HEALTHY)
@@ -258,7 +244,7 @@ class TaskDeploymentService {
                 .image("$ecrEndpoint/aws-analytical-env/hue:$hueTag")
                 .cpu(256)
                 .memory(getMemoryForCpuUnits(256))
-                .essential(false)
+                .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8888).hostPort(8888).build())
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
@@ -273,7 +259,7 @@ class TaskDeploymentService {
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
-        tabs.put(30, "https://localhost:8888")
+        tabs[30] = ContainerTab("Hue", "https://localhost:8888", true)
 
         val rstudioOssTag: String = System.getenv("RSTUDIO_OSS_TAG") ?: "latest"
         val rstudioOss = ContainerDefinition.builder()
@@ -281,7 +267,7 @@ class TaskDeploymentService {
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss:$rstudioOssTag")
                 .cpu(1024)
                 .memory(getMemoryForCpuUnits(1024))
-                .essential(false)
+                .essential(true)
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
@@ -299,7 +285,7 @@ class TaskDeploymentService {
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
-        tabs.put(20, "https://localhost:7000")
+        tabs[20] = ContainerTab("RStudio", "https://localhost:7000", true)
 
         val jupyterhubHealthCheck = HealthCheck.builder()
                 .command("CMD", "curl", "-k", "-o", "/dev/null", "https://localhost:8000/hub/health")
@@ -333,18 +319,20 @@ class TaskDeploymentService {
                 .linuxParameters(swapLinuxParameters)
                 .build()
 
-        tabs.put(10, "https://localhost:8000")
+        tabs[10] = ContainerTab("JupyterHub", "https://localhost:8000", true)
 
         val headlessChromeHealthCheck = HealthCheck.builder()
-                .command("CMD-SHELL", "supervisorctl", "status", "|", "awk", "'BEGIN {c=0} $2 == \"RUNNING\" {c++} END {exit c != 3}'")
+                .command("CMD-SHELL", "supervisorctl", "status", "|", "awk", "'BEGIN {c=0} $2 != \"RUNNING\" {c++} END {exit c != 0}'")
                 .interval(12)
                 .timeout(12)
                 .startPeriod(20)
                 .build()
 
-        tabs.put(40,configurationResolver.getStringConfig(ConfigKey.GITHUB_URL))
-        
-        tabs.put(50, "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken)
+        tabs[40] = ContainerTab("UC GitHub", configurationResolver.getStringConfig(ConfigKey.GITHUB_URL), false)
+
+        val azkabanUrl = "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken
+        tabs[50] = ContainerTab("Azkaban", azkabanUrl, false)
+
 
         val headlessChromeTag: String = System.getenv("HEADLESS_CHROME_TAG") ?: "latest"
         val headlessChrome = ContainerDefinition.builder()
@@ -362,30 +350,28 @@ class TaskDeploymentService {
                         "--no-sandbox",
                         "--window-position=0,0",
                         "--force-device-scale-factor=1",
-                        "--incognito",
                         "--noerrdialogs",
                         "--disable-translate",
                         "--no-first-run",
                         "--disable-infobars",
                         "--disable-features=TranslateUI",
                         "--disk-cache-dir=/dev/null",
-                        "--test-type ${tabs.toSortedMap().values.joinToString(" ")}",
                         "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk\"",
                         "--ignore-certificate-errors",
                         "--enable-auto-reload",
-                        "--connectivity-check-url=https://localhost:8000",
+                        "--disable-popup-blocking",
                         "--window-size=${screenSize.toList().joinToString(",")}"
                     ).joinToString(" "),
                     "VNC_SCREEN_SIZE" to screenSize.toList().joinToString("x"),
                     if (hasFileTransferPermission) "SFTP_PUBLIC_KEY" to sshKeyPair.public else null,
                     "DOWNLOADS_LOCATION" to "/mnt/s3fs/s3-home",
+                    "CONTAINER_INFO" to jacksonObjectMapper().writeValueAsString(tabs.toSortedMap().values),
                     *proxyEnvVariables
                 )
             )
             .logConfiguration(buildLogConfiguration(containerProperties.userName, "headless_chrome"))
             .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
             .healthCheck(headlessChromeHealthCheck)
-            .dependsOn(jupyterhubContainerDependency, rstudioOssContainerDependency, hueContainerDependency)
             .build()
 
         val guacdHealthCheck = HealthCheck.builder()
@@ -406,7 +392,6 @@ class TaskDeploymentService {
                 .portMappings(PortMapping.builder().hostPort(4822).containerPort(4822).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacd"))
                 .healthCheck(guacdHealthCheck)
-                .dependsOn(headlessChromeDependency)
                 .build()
                 
         val guacamoleTag: String = System.getenv("GUACAMOLE_TAG") ?: "latest"
@@ -449,7 +434,7 @@ class TaskDeploymentService {
                     .containerPort(containerProperties.guacamolePort).build()
             )
             .logConfiguration(buildLogConfiguration(containerProperties.userName, "guacamole"))
-            .dependsOn(jupyterhubContainerDependency, guacdContainerDependency)
+            .dependsOn(guacdContainerDependency, headlessChromeDependency)
             .build()
 
         val s3fsHealthCheck = HealthCheck.builder()

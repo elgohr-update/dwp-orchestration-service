@@ -80,6 +80,12 @@ data class TextSSHKeyPair(
     val public: String
 )
 
+data class ContainerTab(
+    val name: String,
+    val url: String,
+    val required: Boolean
+)
+
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
 data class StatementObject(
         @JsonProperty("Sid") var sid: String,
