@@ -117,7 +117,7 @@ class TaskDeploymentService {
             val taskRolePolicyString = awsParsing.parsePolicyDocument(taskRoleDocument, mapOf("ecstaskrolepolicy" to additionalPermissions), "Action")
             val taskAssumeRoleString = taskAssumeRoleDocument.inputStream.bufferedReader().use { it.readText() }
             val iamPolicy = awsCommunicator.createIamPolicy(correlationId, userName, taskRolePolicyString, "iamPolicyUserArn")
-            val iamRole = awsCommunicator.createIamRole(correlationId, userName, taskAssumeRoleString)
+            val iamRole = awsCommunicator.getIamRole(correlationId, userName) ?: awsCommunicator.createIamRole(correlationId, userName, taskAssumeRoleString)
             awsCommunicator.attachIamPolicyToRole(correlationId, iamPolicy, iamRole)
             awsCommunicator.attachIamPolicyToRole(correlationId, setupJupyterIam(cognitoGroups, userName, correlationId, accountNumber, userS3BucketKmsArn), iamRole)
 

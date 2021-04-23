@@ -106,8 +106,14 @@ data "aws_iam_policy_document" "task_role" {
       "iam:DetachRolePolicy",
       "iam:DeleteRole",
       "iam:PassRole",
+      "iam:GetRole",
+      "iam:ListRoles",
+      "iam:ListAttachedRolePolicies",
     ]
-    resources = ["arn:aws:iam::${var.account}:role/orchestration-service-user-*"]
+    resources = [
+      "arn:aws:iam::${var.account}:role/orchestration-service-user-*",
+      "arn:aws:iam::${var.account}:role/app/os/*",
+    ]
   }
   statement {
     sid = "AllowKMSKeyDescribeForUserContainer"
