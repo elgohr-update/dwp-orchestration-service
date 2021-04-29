@@ -82,7 +82,7 @@ data "aws_iam_policy_document" "user_host" {
   }
 
   statement {
-    sid = "AllowUserHostListPackagesBucket"
+    sid    = "AllowUserHostListPackagesBucket"
     effect = "Allow"
     actions = [
       "s3:ListBucket",
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "user_host" {
   }
 
   statement {
-    sid = "AllowUserHostDownloadPackages"
+    sid    = "AllowUserHostDownloadPackages"
     effect = "Allow"
     actions = [
       "s3:Get*",

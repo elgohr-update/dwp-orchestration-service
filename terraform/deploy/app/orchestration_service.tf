@@ -58,8 +58,8 @@ module "ecs-fargate-task-definition" {
       name  = "orchestrationService.debug"
       value = local.environment == "development" ? "true" : "false"
     },
-    { 
-      name = "sftp_user"
+    {
+      name  = "sftp_user"
       value = var.sftp_user[local.environment]
     },
     {

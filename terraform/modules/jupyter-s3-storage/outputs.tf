@@ -5,5 +5,5 @@ output "jupyterhub_bucket" {
 
 output "s3fs_bucket_kms_arn" {
   description = "The ARN of the JupyterHub bucket default KMS key"
-  value = aws_kms_key.jupyter_bucket_master_key.arn
+  value       = aws_kms_key.jupyter_bucket_master_key.arn
 }
