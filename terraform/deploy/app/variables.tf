@@ -294,7 +294,7 @@ variable "component_tags" {
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
-      s3fs            = "0.0.81"
+      s3fs            = "0.0.88"
     }
     qa = {
       hue             = "0.0.86"
@@ -303,7 +303,7 @@ variable "component_tags" {
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
-      s3fs            = "0.0.81"
+      s3fs            = "0.0.88"
     }
     integration = {
       hue             = "0.0.86"
@@ -312,7 +312,7 @@ variable "component_tags" {
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
-      s3fs            = "0.0.81"
+      s3fs            = "0.0.88"
     }
     preprod = {
       hue             = "0.0.86"
@@ -321,7 +321,7 @@ variable "component_tags" {
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
-      s3fs            = "0.0.81"
+      s3fs            = "0.0.88"
     }
     production = {
       hue             = "0.0.86"
@@ -330,7 +330,7 @@ variable "component_tags" {
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
-      s3fs            = "0.0.81"
+      s3fs            = "0.0.88"
     }
   }
 }
