@@ -276,11 +276,11 @@ variable "container_image_tag" {
   description = "(Optional) Override the orchestration engine docker image tag version in each environment"
   type        = map(string)
   default = {
-    development = "0.0.206"
-    qa          = "0.0.206"
-    integration = "0.0.206"
-    preprod     = "0.0.206"
-    production  = "0.0.206"
+    development = "0.0.212"
+    qa          = "0.0.212"
+    integration = "0.0.212"
+    preprod     = "0.0.212"
+    production  = "0.0.212"
   }
 }
 
@@ -288,8 +288,8 @@ variable "component_tags" {
   type = map(map(string))
   default = {
     development = {
-      hue             = "0.0.86"
-      rstudio_oss     = "0.0.36"
+      hue             = "0.0.89"
+      rstudio_oss     = "0.0.38"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -297,8 +297,8 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     qa = {
-      hue             = "0.0.86"
-      rstudio_oss     = "0.0.36"
+      hue             = "0.0.89"
+      rstudio_oss     = "0.0.38"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -306,8 +306,8 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     integration = {
-      hue             = "0.0.86"
-      rstudio_oss     = "0.0.36"
+      hue             = "0.0.89"
+      rstudio_oss     = "0.0.38"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -315,8 +315,8 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     preprod = {
-      hue             = "0.0.86"
-      rstudio_oss     = "0.0.36"
+      hue             = "0.0.89"
+      rstudio_oss     = "0.0.38"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -324,8 +324,8 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     production = {
-      hue             = "0.0.86"
-      rstudio_oss     = "0.0.36"
+      hue             = "0.0.89"
+      rstudio_oss     = "0.0.38"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
