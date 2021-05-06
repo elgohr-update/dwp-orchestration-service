@@ -249,10 +249,7 @@ class TaskDeploymentService {
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
                         "EMR_HOST_NAME" to containerProperties.emrHostname,
-                        "S3_BUCKET" to containerProperties.userS3Bucket.substringAfterLast(":"),
-                        "KMS_HOME" to containerProperties.kmsHome,
-                        "KMS_SHARED" to containerProperties.kmsShared,
-                        "GITHUB_URL" to containerProperties.githubUrl,
+                        "JWT_TOKEN" to containerProperties.cognitoToken,
                         "DISABLE_AUTH" to "true"))
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "hue"))
@@ -271,7 +268,8 @@ class TaskDeploymentService {
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
                 .environment(pairsToKeyValuePairs(
                         "USER" to containerProperties.userName,
-                        "EMR_URL" to (containerProperties.livyProxyUrl ?: "http://${containerProperties.emrHostname}:8998"),
+                        "LIVY_URL" to (containerProperties.livyProxyUrl ?: "http://${containerProperties.emrHostname}:8998"),
+                        "EMR_HOST_NAME" to containerProperties.emrHostname,
                         "DISABLE_AUTH" to "true",
                         "GITHUB_URL" to containerProperties.githubUrl,
                         "JWT_TOKEN" to containerProperties.cognitoToken,
