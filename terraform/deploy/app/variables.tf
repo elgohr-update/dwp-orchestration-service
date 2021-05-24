@@ -289,7 +289,7 @@ variable "component_tags" {
   default = {
     development = {
       hue             = "0.0.89"
-      rstudio_oss     = "0.0.40"
+      rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -298,7 +298,7 @@ variable "component_tags" {
     }
     qa = {
       hue             = "0.0.89"
-      rstudio_oss     = "0.0.40"
+      rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -307,7 +307,7 @@ variable "component_tags" {
     }
     integration = {
       hue             = "0.0.89"
-      rstudio_oss     = "0.0.40"
+      rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -316,7 +316,7 @@ variable "component_tags" {
     }
     preprod = {
       hue             = "0.0.89"
-      rstudio_oss     = "0.0.40"
+      rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
@@ -325,7 +325,7 @@ variable "component_tags" {
     }
     production = {
       hue             = "0.0.89"
-      rstudio_oss     = "0.0.40"
+      rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
