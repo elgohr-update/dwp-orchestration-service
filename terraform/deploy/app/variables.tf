@@ -288,7 +288,7 @@ variable "component_tags" {
   type = map(map(string))
   default = {
     development = {
-      hue             = "0.0.89"
+      hue             = "0.0.102"
       rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
@@ -297,7 +297,7 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     qa = {
-      hue             = "0.0.89"
+      hue             = "0.0.102"
       rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
@@ -306,7 +306,7 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     integration = {
-      hue             = "0.0.89"
+      hue             = "0.0.102"
       rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
@@ -315,7 +315,7 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     preprod = {
-      hue             = "0.0.89"
+      hue             = "0.0.102"
       rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
@@ -324,7 +324,7 @@ variable "component_tags" {
       s3fs            = "0.0.88"
     }
     production = {
-      hue             = "0.0.89"
+      hue             = "0.0.102"
       rstudio_oss     = "0.0.42"
       jupyter_hub     = "0.0.66"
       headless_chrome = "0.0.15"
