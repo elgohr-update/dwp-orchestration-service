@@ -116,11 +116,11 @@ module "ecs-fargate-task-definition" {
     },
     {
       name  = "orchestrationService.jupyterhub_bucket_arn"
-      value = module.jupyter_s3_storage.jupyterhub_bucket.arn
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.s3fs_bucket.arn
     },
     {
       name  = "orchestrationService.jupyterhub_bucket_kms_arn"
-      value = module.jupyter_s3_storage.s3fs_bucket_kms_arn
+      value = data.terraform_remote_state.aws_analytical_env_app.outputs.s3fs_bucket_kms_arn
     },
     {
       name  = "orchestrationService.aws_account_number"
@@ -286,21 +286,6 @@ module "user-task-definition" {
   name_prefix = "${var.name_prefix}-user"
 
   common_tags = local.common_tags
-}
-
-#
-## ---------------------------------------------------------------------------------------------------------------------
-## JupyterHub S3 Storage
-## ---------------------------------------------------------------------------------------------------------------------
-module "jupyter_s3_storage" {
-  source      = "../../modules/jupyter-s3-storage"
-  name_prefix = "${var.name_prefix}-jupyter-s3-storage"
-
-  common_tags    = local.common_tags
-  logging_bucket = data.terraform_remote_state.security-tools.outputs.logstore_bucket.id
-  vpc_id         = data.terraform_remote_state.aws_analytical_env_infra.outputs.vpc.aws_vpc.id
-  account        = lookup(local.account, local.environment)
-
 }
 
 #

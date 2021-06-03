@@ -9,11 +9,3 @@ output "alb_sg" {
 output "orchestration_service_fqdn" {
   value = module.ecs-fargate-service.fqdn
 }
-
-output "s3fs_bucket_id" {
-  value = module.jupyter_s3_storage.jupyterhub_bucket.id
-}
-
-output "s3fs_bucket_kms_arn" {
-  value = module.jupyter_s3_storage.s3fs_bucket_kms_arn
-}
