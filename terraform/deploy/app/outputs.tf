@@ -3,7 +3,9 @@ output "ecs_user_host" {
 }
 
 output "alb_sg" {
-  value = module.ecs-fargate-service.lb_sg
+  value = {
+    id = module.ecs-fargate-service.lb_sg.id
+  }
 }
 
 output "orchestration_service_fqdn" {
