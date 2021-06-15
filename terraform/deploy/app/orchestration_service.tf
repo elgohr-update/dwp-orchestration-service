@@ -249,12 +249,12 @@ module "ecs-user-host" {
   source = "../../modules/ecs-user"
   ami_id = data.aws_ami.hardened.id
   auto_scaling = {
-    max_size              = local.environment == "production" ? 6 : 3
+    max_size              = local.environment == "production" ? 10 : 3
     min_size              = local.environment == "production" ? 3 : 1
     max_instance_lifetime = 604800
   }
   common_tags             = merge(local.common_tags, { Name = "${var.name_prefix}-user-host" })
-  instance_type           = local.environment == "production" ? "m5.4xlarge" : "m5.2xlarge"
+  instance_type           = local.environment == "production" ? "m5.8xlarge" : "m5.2xlarge"
   name_prefix             = "${var.name_prefix}-user-host"
   frontend_alb_sg_id      = data.terraform_remote_state.aws_analytical_env_infra.outputs.alb_sg.id
   guacamole_port          = local.guacamole_port
