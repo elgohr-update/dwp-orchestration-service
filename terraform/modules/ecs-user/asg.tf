@@ -147,7 +147,7 @@ resource "aws_launch_template" "user_host" {
     ebs {
       delete_on_termination = true
       encrypted             = true
-      volume_size           = 64
+      volume_size           = 128
     }
   }
 

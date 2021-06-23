@@ -155,6 +155,8 @@ class TaskDeploymentService {
 
             val taskDefinition = TaskDefinition.builder()
                     .family("orchestration-service-user-$userName-td")
+                    .cpu("2688")
+                    .memory("9676")
                     .executionRoleArn(taskExecutionRoleArn)
                     .taskRoleArn(iamRole.arn())
                     .networkMode(NetworkMode.AWSVPC)
@@ -242,8 +244,7 @@ class TaskDeploymentService {
         val hue = ContainerDefinition.builder()
                 .name("hue")
                 .image("$ecrEndpoint/aws-analytical-env/hue:$hueTag")
-                .cpu(256)
-                .memory(getMemoryForCpuUnits(256))
+                .memoryReservation(256)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8888).hostPort(8888).build())
                 .environment(pairsToKeyValuePairs(
@@ -262,8 +263,7 @@ class TaskDeploymentService {
         val rstudioOss = ContainerDefinition.builder()
                 .name("rstudio-oss")
                 .image("$ecrEndpoint/aws-analytical-env/rstudio-oss:$rstudioOssTag")
-                .cpu(1024)
-                .memory(getMemoryForCpuUnits(1024))
+                .memoryReservation(1024)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(7000).hostPort(7000).build())
                 .environment(pairsToKeyValuePairs(
@@ -279,7 +279,7 @@ class TaskDeploymentService {
                 .volumesFrom(VolumeFrom.builder().sourceContainer("s3fs").build())
                 .mountPoints(MountPoint.builder().containerPath("/mnt/packages").sourceVolume(containerProperties.packagesVolumeName).build())
                 .logConfiguration(buildLogConfiguration(containerProperties.userName, "rstudio-oss"))
-                .linuxParameters(swapLinuxParameters)
+                .linuxParameters(swapLinuxParameters.copy { it.maxSwap(6144) })
                 .dependsOn(s3fsContainerDependency)
                 .build()
 
@@ -296,8 +296,7 @@ class TaskDeploymentService {
         val jupyterHub = ContainerDefinition.builder()
                 .name("jupyterHub")
                 .image("$ecrEndpoint/aws-analytical-env/jupyterhub:$jupyterHubTag")
-                .cpu(512)
-                .memory(getMemoryForCpuUnits(512))
+                .memoryReservation(512)
                 .essential(true)
                 .portMappings(PortMapping.builder().containerPort(8000).hostPort(8000).build())
                 .environment(pairsToKeyValuePairs(
