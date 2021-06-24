@@ -9,13 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import uk.gov.dwp.dataworks.CleanupRequest
 import uk.gov.dwp.dataworks.ConnectionInfo
 import uk.gov.dwp.dataworks.DeployRequest
@@ -57,7 +51,7 @@ class ConnectionController {
         ApiResponse(responseCode = "200", description = "User attributes present"),
         ApiResponse(responseCode = "204", description = "User attribute(s) missing")
     ])
-    @PostMapping("/verify-user")
+    @GetMapping("/verify-user")
     fun verifyUser(@RequestHeader("Authorisation") token: String): ResponseEntity<Nothing> {
         if(userValidationService.checkJwtForAttributes(token)) return ResponseEntity(HttpStatus.OK)
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null)

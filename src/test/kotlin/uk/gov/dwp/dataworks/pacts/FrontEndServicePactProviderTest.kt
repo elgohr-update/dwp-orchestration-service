@@ -8,6 +8,8 @@ import au.com.dius.pact.provider.junit.target.TestTarget
 import au.com.dius.pact.provider.spring.target.MockMvcTarget
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Before
@@ -36,6 +38,8 @@ class FrontEndServicePactProviderTest {
     lateinit var taskDestroyService: TaskDestroyService
     @Mock()
     lateinit var configurationResolver: ConfigurationResolver
+    @Mock()
+    lateinit var userValidationService: UserValidationService
 
     @InjectMocks()
     lateinit var connectionController: ConnectionController
@@ -61,5 +65,15 @@ class FrontEndServicePactProviderTest {
     @State("I am awaiting an invalid connection")
     fun `a request for a tooling environment with invalid token`() {
         whenever(authServiceMock.validate(anyString())).thenThrow(JWTVerificationException(""))
+    }
+
+    @State("I am waiting to verify a user who is correctly setup")
+    fun `a request for verifying a user`() {
+        whenever(userValidationService.checkJwtForAttributes(any())).doReturn(true)
+    }
+
+    @State("I am waiting to verify a user who is incorrectly setup")
+    fun `a request for verifying a bad user`() {
+        whenever(userValidationService.checkJwtForAttributes(any())).doReturn(false)
     }
 }
