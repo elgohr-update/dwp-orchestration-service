@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.dwp.dataworks.CleanupRequest
+import uk.gov.dwp.dataworks.ConnectionInfo
 import uk.gov.dwp.dataworks.DeployRequest
 import uk.gov.dwp.dataworks.ForbiddenException
 import uk.gov.dwp.dataworks.logging.DataworksLogger
@@ -68,9 +69,9 @@ class ConnectionController {
         ApiResponse(responseCode = "200", description = "Success"),
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
-    @PostMapping("/connect", produces = ["text/plain"])
+    @PostMapping("/connect", produces = ["application/json"])
     @ResponseStatus(HttpStatus.OK)
-    fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): String {
+    fun connect(@RequestHeader("Authorisation") token: String, @RequestBody requestBody: DeployRequest): ConnectionInfo {
         val jwtObject = authService.validate(token)
         return handleConnectionRequest(token, jwtObject.username, jwtObject.cognitoGroups, requestBody)
 
@@ -83,7 +84,7 @@ class ConnectionController {
         ApiResponse(responseCode = "400", description = "Failure, bad request")
     ])
     @PostMapping("/debug/deploy")
-    fun launchTask(@RequestHeader("Authorisation") token: String, @RequestHeader("Authorisation") userName: String, @RequestHeader("cognitoGroups") cognitoGroups: List<String>, @RequestBody requestBody: DeployRequest): String {
+    fun launchTask(@RequestHeader("Authorisation") token: String, @RequestHeader("Authorisation") userName: String, @RequestHeader("cognitoGroups") cognitoGroups: List<String>, @RequestBody requestBody: DeployRequest): ConnectionInfo {
         if (configurationResolver.getStringConfig(ConfigKey.DEBUG) != "true" )
             throw ForbiddenException("Debug routes not enabled")
         return handleConnectionRequest(token, userName, cognitoGroups, requestBody)
@@ -112,7 +113,10 @@ class ConnectionController {
 
     @PostMapping("/cleanup")
     @ResponseStatus(HttpStatus.OK)
-    fun cleanup(@RequestBody request: CleanupRequest) {
+    fun cleanup(@RequestBody request: CleanupRequest, response: HttpServletResponse) {
+        logger.info("CleanUp called for ${request.activeUsers}")
+        response.status = 200;
+        response.outputStream.close()
         taskDestroyService.cleanupUserTasks(request.activeUsers)
         taskDestroyService.cleanupUnusedIamRoles()
     }
@@ -124,9 +128,11 @@ class ConnectionController {
         res.sendError(HttpStatus.UNAUTHORIZED.value(), "Failed to verify JWT token")
     }
 
-    fun handleConnectionRequest(token: String, userName: String, cognitoGroups: List<String>, requestBody: DeployRequest):String {
+    fun handleConnectionRequest(token: String, userName: String, cognitoGroups: List<String>, requestBody: DeployRequest):ConnectionInfo {
+        var redirect: Boolean
         if (activeUserTasks.contains(userName)) {
-            logger.info("Redirecting user to running containers, as they exist")
+            logger.info("Redirecting user $userName to already running containers");
+            redirect = true;
         } else {
             taskDeploymentService.runContainers(
                     token,
@@ -135,7 +141,8 @@ class ConnectionController {
                     requestBody.additionalPermissions,
                     requestBody.screenWidth,
                     requestBody.screenHeight)
+            redirect = false;
         }
-        return "${configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}/"
+        return ConnectionInfo("${configurationResolver.getStringConfig(ConfigKey.USER_CONTAINER_URL)}/${userName}/", redirect )
     }
 }

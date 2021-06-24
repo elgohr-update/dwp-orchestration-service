@@ -86,6 +86,11 @@ data class ContainerTab(
     val required: Boolean
 )
 
+data class ConnectionInfo(
+    val url: String,
+    val redirect: Boolean
+)
+
 @JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
 data class StatementObject(
         @JsonProperty("Sid") var sid: String,

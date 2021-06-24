@@ -2,16 +2,14 @@ package uk.gov.dwp.dataworks.controllers
 
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.http.MediaType
 import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -85,23 +83,40 @@ class ConnectionControllerTest {
                 .header("content-type", "application/json")
                 .header("Authorisation", "testBadToken"))
                 .andExpect(status().isUnauthorized)
+                .andExpect(content().contentType(MediaType.TEXT_PLAIN))
         mvc.perform(post("/disconnect")
                 .header("Authorisation", "testBadToken"))
                 .andExpect(status().isUnauthorized)
     }
 
     @Test
-    fun `200 returned with well formed request connect and disconnect`() {
+    fun `200 returned with well formed new environment request connect and disconnect`() {
         mvc.perform(post("/connect")
                 .content("{\"emrClusterHostName\":\"\"}")
                 .header("content-type", "application/json")
                 .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)
-                .andExpect(content().string("test_url/test_user/"))
+                .andExpect(content().json("{ 'url': 'test_url/test_user/', 'redirect'=false}"))
         mvc.perform(post("/disconnect")
                 .header("Authorisation", "testGoodToken"))
                 .andExpect(status().isOk)
     }
+
+    @Test
+    fun `200 returned with well formed existing environment request connect and disconnect`() {
+        whenever(activeUserTasks.contains(any())).thenReturn(true)
+        mvc.perform(post("/connect")
+                .content("{\"emrClusterHostName\":\"\"}")
+                .header("content-type", "application/json")
+                .header("Authorisation", "testGoodToken"))
+                .andExpect(status().isOk)
+                .andExpect(content().json("{ 'url': 'test_url/test_user/', 'redirect'=true}"))
+        mvc.perform(post("/disconnect")
+                .header("Authorisation", "testGoodToken"))
+                .andExpect(status().isOk)
+        validateMockitoUsage()
+    }
+
     @Test
     fun `Endpoint debug deploy returns '405 not supported' for GET requests`() {
         mvc.perform(get("/debug/deploy"))
