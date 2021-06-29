@@ -6,9 +6,11 @@ groups:
   - integration
   - preprod
   - production
+
 - name: pull-request
   jobs:
   - orchestration-service-pr
+
 - name: cycle-old-instances
   jobs:
   - cycle-old-instances-development
@@ -16,3 +18,7 @@ groups:
   - cycle-old-instances-integration
   - cycle-old-instances-preprod
   - cycle-old-instances-production
+
+- name: update-pipeline
+  jobs:
+  - update-pipeline
