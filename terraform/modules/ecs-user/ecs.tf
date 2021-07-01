@@ -22,7 +22,7 @@ resource "aws_ecs_capacity_provider" "user_host" {
       status                    = "ENABLED"
       maximum_scaling_step_size = 10
       minimum_scaling_step_size = 1
-      target_capacity           = 100
+      target_capacity           = 80
     }
 
   }
