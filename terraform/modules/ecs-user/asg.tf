@@ -66,6 +66,11 @@ write_files:
     owner: root:root
     path: /usr/share/sysdig/chisels/spy_log.lua
     permissions: '0644'
+  - encoding: b64
+    content: ${filebase64("${path.module}/scripts/ecs_instance_health_check.py")}
+    owner: root:root
+    path: /usr/local/src/ecs_instance_health_check.py
+    permissions: '0644'
 EOF
   }
 
@@ -127,6 +132,18 @@ EOF
     chmod 600 /swapfile
     mkswap /swapfile
     swapon /swapfile
+EOF
+  }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
+    # Start long-running ECS instance health check as a background task
+    export REGION=${data.aws_region.current.name}
+    export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+    nohup python /usr/local/src/ecs_instance_health_check.py &
 EOF
   }
 
