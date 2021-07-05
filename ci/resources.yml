@@ -27,12 +27,3 @@ resources:
       - aviator.yml
   check_every: 720h
   webhook_token: ((dataworks.concourse_github_webhook_token))
-
-
-- name: utc-midnight-trigger
-  type: time
-  source:
-    location: UTC
-    start: 00:00
-    stop: 01:00
-
