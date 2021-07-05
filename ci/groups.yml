@@ -11,14 +11,6 @@ groups:
   jobs:
   - orchestration-service-pr
 
-- name: cycle-old-instances
-  jobs:
-  - cycle-old-instances-development
-  - cycle-old-instances-qa
-  - cycle-old-instances-integration
-  - cycle-old-instances-preprod
-  - cycle-old-instances-production
-
 - name: update-pipeline
   jobs:
   - update-pipeline
