@@ -349,3 +349,9 @@ variable "sftp_user" {
     production  = "user"
   }
 }
+
+variable "ecs_hardened_ami_id" {
+  description = "Defines if cluster should use the provided untested ECS AMI"
+  type        = string
+  default     = ""
+}

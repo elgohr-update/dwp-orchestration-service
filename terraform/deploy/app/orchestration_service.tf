@@ -247,7 +247,7 @@ data "aws_ami" "hardened" {
 
 module "ecs-user-host" {
   source = "../../modules/ecs-user"
-  ami_id = data.aws_ami.hardened.id
+  ami_id = var.ecs_hardened_ami_id == "" ? data.aws_ami.hardened.id : var.ecs_hardened_ami_id
   auto_scaling = {
     max_size              = local.environment == "production" ? 10 : 3
     min_size              = local.environment == "production" ? 3 : 1
