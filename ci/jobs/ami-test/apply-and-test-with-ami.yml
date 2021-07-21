@@ -12,11 +12,18 @@ jobs:
           - get: orchestration-service
             passed:
               - qa
+            trigger: true
+      - .: (( inject meta.plan.check-ami-test-results ))
+        input_mapping:
+          untested_ami: dw-al2-ecs-ami
       - .: (( inject meta.plan.terraform-bootstrap ))
         config:
           params:
             AWS_ACC: ((aws_account.qa))
             DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
+            - name: dw-al2-ecs-ami
       - .: (( inject meta.plan.terraform-apply ))
         config:
           run:
@@ -24,6 +31,8 @@ jobs:
           params:
             TF_WORKSPACE: qa
             DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
       - .: (( inject meta.plan.terraform-plan ))
         config:
           run:
@@ -31,6 +40,8 @@ jobs:
           params:
             TF_WORKSPACE: qa
             DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
       - .: (( inject meta.plan.terminate-ecs-instances ))
       - .: (( inject meta.plan.test-ecs-ami ))
     on_failure:

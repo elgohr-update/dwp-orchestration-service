@@ -14,10 +14,13 @@ meta:
           args:
             - -exc
             - |
+              if [ -f ../previous_success/exit-if-succeeded.sh ]; then
+                source ../previous_success/exit-if-succeeded.sh
+              fi
               python bootstrap_terraform.py
               sed -i '/^assume_role/ d' terraform/deploy/$DEPLOY_PATH/terraform.tfvars
-              if [ ! "$TEST_AMI" == "" ]; then
-                echo "\necs_hardened_ami_id=\"$(cat dw-al2-ecs-ami/id)\"" >> terraform/deploy/$DEPLOY_PATH/terraform.tfvars
+              if [ -f ../dw-al2-ecs-ami/id ]; then
+                echo -e "\necs_hardened_ami_id=\"$(cat ../dw-al2-ecs-ami/id)\"" >> "terraform/deploy/$DEPLOY_PATH/terraform.tfvars"
               fi
               cp terraform/deploy/$DEPLOY_PATH/terraform.tf ../terraform-config
               cp terraform/deploy/$DEPLOY_PATH/terraform.tfvars ../terraform-config
@@ -52,6 +55,10 @@ meta:
           args:
           - -exc
           - |
+            if [ -f ../../../../previous_success/exit-if-succeeded.sh ]; then
+              source ../../../../previous_success/exit-if-succeeded.sh
+            fi
+
             cp ../../../../terraform-config/terraform.tf .
             cp ../../../../terraform-config/terraform.tfvars .
             terraform init
@@ -71,6 +78,10 @@ meta:
           args:
           - -exc
           - |
+            if [ -f ../../../../previous_success/exit-if-succeeded.sh ]; then
+              source ../../../../previous_success/exit-if-succeeded.sh
+            fi
+
             cp ../../../../terraform-config/terraform.tf .
             cp ../../../../terraform-config/terraform.tfvars .
             terraform init
@@ -95,30 +106,33 @@ meta:
           args:
             - -exc
             - |
+              source ./previous_success/exit-if-succeeded.sh
+
               export AWS_DEFAULT_REGION
               ami_id=$(cat dw-al2-ecs-ami/id)
               source /assume-role
-              set +x
+              set -x
               instance_ids=$(aws ec2 describe-instances --filters Name=tag:Name,Values=orchestration-service-user-host-* Name=instance-state-name,Values=running | jq -r '.Reservations[].Instances[].InstanceId')
               for instance_id in $instance_ids;
                 do
                   aws ec2 terminate-instances --instance-ids "$instance_id"
                 done;
-              desired_capacity=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name "$ASG_NAME" | jq -r '.AutoScalingGroups[0].DesiredCapacity')
-              min_size=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name "$ASG_NAME" | jq -r '.AutoScalingGroups[0].MinSize')
-              aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --min-size 0 || exit 1
+              asgs=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name "$ASG_NAME")
+              desired_capacity=$(echo $asgs | jq -r '.AutoScalingGroups[0].DesiredCapacity')
+              min_size=$(echo $asgs | jq -r '.AutoScalingGroups[0].MinSize')
+              aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --min-size 0 --desired-capacity 0 || exit 1
               count=0
               max_retries="$MAX_RETRIES"
               while [ "$count" -lt "$max_retries" ]
                 do
                   sleep "$SLEEP_TIME"
-                  instance_ids=$(aws ec2 describe-instances --filters Name=tag:Name,Values=orchestration-service-user-host-* Name=instance-state-name,Values=running | jq -r '.Reservations[].Instances[].InstanceId')
+                  instance_ids=$(aws ec2 describe-instances --filters Name=tag:Name,Values=orchestration-service-user-host-* Name=instance-state-name,Values=running | jq -r '.Reservations[] | .Instances[] | .InstanceId')
                   if [ ${#instance_ids} -ge 1 ]; then
                     instance_count=$(echo $instance_ids | tr ' ' '\n' | wc -l)
                   else
                     instance_count=0
                   fi
-                  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --min-size "$min_size" || exit 1
+                  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --min-size "$min_size" --desired-capacity "$desired_capacity" || exit 1
                   if [[ $instance_count -eq $desired_capacity ]]; then
                     image_ids="$(aws ec2 describe-instances --instance-ids $instance_ids | jq -r '.Reservations[] | .Instances[] | .ImageId')"
                     for i in $image_ids; do
@@ -136,6 +150,7 @@ meta:
               exit 1
         inputs:
           - name: dw-al2-ecs-ami
+          - name: previous_success
       params:
         AWS_DEFAULT_REGION: ((dataworks.aws_region))
         AWS_ROLE_ARN: arn:aws:iam::((aws_account.qa)):role/ci
@@ -158,9 +173,11 @@ meta:
           args:
             - -exc
             - |
+              source ./previous_success/exit-if-succeeded.sh
+
               export AWS_DEFAULT_REGION
               source /assume-role
-              set +x
+              set -x
               max_retries=5
               task_json="$(aws ecs run-task --cluster "$CLUSTER_NAME" --task-definition ami_ecs_test_td --overrides "{\"containerOverrides\": [{\"name\": \"test-ecs-ami\", \"command\": [\"sh\", \"-c\", \"sleep 300\"]}]}")"
               task_arn=$(echo $task_json | jq -r '.tasks[0].taskArn')
@@ -175,6 +192,8 @@ meta:
                 let "max_retries-=1"
               done
               exit 1
+        inputs:
+          - name: previous_success
       params:
         AWS_DEFAULT_REGION: ((dataworks.aws_region))
         AWS_ROLE_ARN: arn:aws:iam::((aws_account.qa)):role/ci
@@ -199,6 +218,8 @@ meta:
           args:
             - -exc
             - |
+              source ./previous_success/exit-if-succeeded.sh
+
               set +x
               AMI_ID=$(cat dw-al2-ecs-ami/id)
               DATE=$(date -u)
@@ -214,3 +235,56 @@ meta:
         inputs:
           - name: meta
           - name: dw-al2-ecs-ami
+          - name: previous_success
+
+    check-ami-test-results:
+      task: check-ami-test-result
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: ((dataworks.terraform_repository))
+            tag: ((dataworks.terraform_13_version))
+        params:
+          AWS_DEFAULT_REGION: ((dataworks.aws_region))
+          GIT_USERNAME: ((dataworks.concourse_github_username))
+          GIT_EMAIL: ((dataworks.concourse_github_email))
+          GITHUB_TOKEN: ((dataworks-secrets.concourse_github_pat))
+        run:
+          path: sh
+          args:
+            - -exc
+            - |
+              set +x
+              PREVIOUS_SUCCESS=false
+              AMI_ID=$(cat untested_ami/id)
+              DATE=$(date -u)
+              PIPELINE="$(cat meta/build_pipeline_name)"
+              PATH_TO_RESULTS="ami-builder-configs/results"
+
+              git config --global user.name "${GIT_USERNAME}"
+              git config --global user.email "${GIT_EMAIL}"
+              git clone https://${GITHUB_TOKEN}:x-oauth-basic@github.com/dwp/ami-builder-configs
+
+              if [ -f "./$PATH_TO_RESULTS/$PIPELINE.test" ]; then
+                set +e
+                grep "$AMI_ID SUCCESS" "./$PATH_TO_RESULTS/$PIPELINE.test"
+                if [ $? -eq 0 ]; then
+                  PREVIOUS_SUCCESS=true
+                fi
+                set -e
+              fi
+
+              touch ./previous_success/exit-if-succeeded.sh
+
+              if $PREVIOUS_SUCCESS; then
+                 echo 'echo "AMI already passed. Exiting..."; exit 0' > ./previous_success/exit-if-succeeded.sh
+              fi
+
+              chmod +x ./previous_success/exit-if-succeeded.sh
+        outputs:
+          - name: previous_success
+        inputs:
+          - name: meta
+          - name: untested_ami
