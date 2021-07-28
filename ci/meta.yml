@@ -156,7 +156,7 @@ meta:
         AWS_ROLE_ARN: arn:aws:iam::((aws_account.qa)):role/ci
         ASG_NAME: orchestration-service-user-host-asg
         SLEEP_TIME: 60
-        MAX_RETRIES: 10
+        MAX_RETRIES: 15
 
     test-ecs-ami:
       task: test-ecs-ami
@@ -178,12 +178,12 @@ meta:
               export AWS_DEFAULT_REGION
               source /assume-role
               set -x
-              max_retries=5
+              max_retries=15
               task_json="$(aws ecs run-task --cluster "$CLUSTER_NAME" --task-definition ami_ecs_test_td --overrides "{\"containerOverrides\": [{\"name\": \"test-ecs-ami\", \"command\": [\"sh\", \"-c\", \"sleep 300\"]}]}")"
               task_arn=$(echo $task_json | jq -r '.tasks[0].taskArn')
               while [ $max_retries > 0 ]
               do
-                sleep 15
+                sleep 60
                 task_json="$(aws ecs describe-tasks --cluster "$CLUSTER_NAME" --tasks $task_arn)"
                 container_status="$(echo "$task_json" | jq -r '.tasks[0].containers[0].lastStatus')"
                 if [ "$container_status" == "RUNNING" ]; then
