@@ -13,6 +13,6 @@ locals {
     qa          = { max : 10, step : 1 },
     integration = { max : 10, step : 1 },
     preprod     = { max : 10, step : 1 },
-    production  = { max : 40, step : 2 }
+    production  = { max : 20, step : 1 }
   }
 }
