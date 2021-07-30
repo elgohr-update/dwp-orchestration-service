@@ -92,3 +92,10 @@ variable "s3_packages" {
     cmk_arn    = string
   })
 }
+
+variable "scaling" {
+  type = object({
+    max  = number
+    step = number
+  })
+}
