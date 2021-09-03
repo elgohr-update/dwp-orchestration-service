@@ -319,7 +319,7 @@ variable "component_tags" {
     }
     preprod = {
       hue             = "0.0.102"
-      rstudio_oss     = "0.0.49"
+      rstudio_oss     = "0.0.50"
       jupyter_hub     = "0.0.70"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
