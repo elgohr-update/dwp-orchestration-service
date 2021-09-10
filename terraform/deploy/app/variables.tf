@@ -329,7 +329,7 @@ variable "component_tags" {
     production = {
       hue             = "0.0.102"
       rstudio_oss     = "0.0.49"
-      jupyter_hub     = "0.0.66"
+      jupyter_hub     = "0.0.73"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
       guacamole       = "0.0.21"
