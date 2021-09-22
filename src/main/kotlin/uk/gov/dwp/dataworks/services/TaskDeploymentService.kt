@@ -353,7 +353,7 @@ class TaskDeploymentService {
                         "--disable-infobars",
                         "--disable-features=TranslateUI",
                         "--disk-cache-dir=/dev/null",
-                        "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk\"",
+                        "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk, EXCLUDE *.ap.dataworks.dwp.gov.uk\"",
                         "--ignore-certificate-errors",
                         "--enable-auto-reload",
                         "--disable-popup-blocking",
