@@ -263,3 +263,8 @@ variable "rds_credentials_secret_arn" {
   type        = string
   description = "(Required) The ARN of secretsmanager secret storing the RDS credentials for the RBAC database"
 }
+
+variable "ap_lambda_arn" {
+  type        = string
+  description = "(Required) AP Lambda arn"
+}

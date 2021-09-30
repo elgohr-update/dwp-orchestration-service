@@ -145,6 +145,12 @@ data "aws_iam_policy_document" "task_role" {
     resources = ["*"] // RDS-data does not support resource ARNs, access is restricted by credential permissions
   }
 
+  statement {
+    sid       = "AllowInvokeAPLambda"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [var.ap_lambda_arn]
+  }
+
 }
 
 resource "aws_iam_policy" "ecs_task_role" {

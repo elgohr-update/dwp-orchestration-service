@@ -27,7 +27,7 @@ dependencies {
 	implementation("software.amazon.awssdk:iam")
 	implementation("software.amazon.awssdk:kms")
 	implementation("software.amazon.awssdk:rdsdata")
-
+	implementation("software.amazon.awssdk:lambda")
 	// Spring
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springdoc:springdoc-openapi-core:1.1.49")

@@ -96,5 +96,8 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     RDS_CREDENTIALS_SECRET_ARN("orchestrationService.rds_credentials_secret_arn", false),
     RDS_DATABASE_NAME("orchestrationService.rds_database_name", false),
     RDS_CLUSTER_ARN("orchestrationService.rds_cluster_arn", false),
-    TOOLING_PERMISSION_OVERRIDES("orchestrationService.tooling_permission_overrides", true)
+    TOOLING_PERMISSION_OVERRIDES("orchestrationService.tooling_permission_overrides", true),
+    AP_LAMBDA_ARN("orchestrationService.ap_lambda_arn", false),
+    AP_FRONTEND_ID("orchestrationService.ap_frontend_id", false),
+    AP_ENABLED_USERS("orchestrationService.ap_enabled_users", false)
 }

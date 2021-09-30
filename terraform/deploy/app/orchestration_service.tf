@@ -15,6 +15,7 @@ module "ecs-fargate-task-definition" {
   role_arn                     = "arn:aws:iam::${local.account[local.environment]}:role/${var.assume_role}"
   management_role_arn          = "arn:aws:iam::${local.account[local.management_account[local.environment]]}:role/${var.assume_role}"
   account                      = lookup(local.account, local.environment)
+  ap_lambda_arn     = data.terraform_remote_state.ap_infrastructure.outputs.ap_lambda_arn
   rds_credentials_secret_arn   = data.terraform_remote_state.aws_analytical_env_app.outputs.rbac_db.secrets.client_credentials["orchestration_service"].arn
   log_configuration = {
     secretOptions = []
@@ -199,6 +200,18 @@ module "ecs-fargate-task-definition" {
       name  = "orchestrationService.tooling_permission_overrides"
       value = "file_transfer_download,file_transfer_upload"
     },
+    {
+      name  = "orchestrationService.ap_lambda_arn"
+      value = data.terraform_remote_state.ap_infrastructure.outputs.ap_lambda_arn
+    },
+    {
+      name  = "orchestrationService.ap_frontend_id"
+      value = data.terraform_remote_state.ap_infrastructure.outputs.ap_frontend_id
+    },
+    {
+      name  = "orchestrationService.ap_enabled_users"
+      value = local.ap_enabled_users
+    },
   ]
 }
 #
@@ -283,10 +296,9 @@ module "ecs-user-host" {
 ## ECS UserService
 ## ---------------------------------------------------------------------------------------------------------------------
 module "user-task-definition" {
-  source      = "../../modules/user-task-definition"
-  name_prefix = "${var.name_prefix}-user"
-
-  common_tags = local.common_tags
+  source            = "../../modules/user-task-definition"
+  name_prefix       = "${var.name_prefix}-user"
+  common_tags       = local.common_tags
 }
 
 #

@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalanci
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.rdsdata.RdsDataClient
+import software.amazon.awssdk.services.lambda.LambdaClient
 import uk.gov.dwp.dataworks.services.ConfigurationResolver
 import javax.annotation.PostConstruct
 
@@ -26,6 +27,7 @@ class AwsClients {
     lateinit var dynamoDbClient: DynamoDbClient
     lateinit var kmsClient: KmsClient
     lateinit var rdsDataClient: RdsDataClient
+    lateinit var lambdaClient: LambdaClient
 
     @PostConstruct
     fun initialiseClients() {
@@ -35,5 +37,6 @@ class AwsClients {
         dynamoDbClient = DynamoDbClient.builder().region(configurationResolver.awsRegion).build()
         kmsClient = KmsClient.builder().region(configurationResolver.awsRegion).build()
         rdsDataClient = RdsDataClient.builder().region(configurationResolver.awsRegion).build()
+        lambdaClient = LambdaClient.builder().region(configurationResolver.awsRegion).build()
     }
 }

@@ -71,7 +71,10 @@ import java.net.URI
             "orchestrationService.push_gateway_cron=*/5 * * * *",
             "orchestrationService.github_proxy_url=proxy.tld:3128",
             "orchestrationService.github_url=http://github.tld",
-            "orchestrationService.livy_proxy_url=http://livy.tld"
+            "orchestrationService.livy_proxy_url=http://livy.tld",
+            "orchestrationService.ap_lambda_arn=arn:aws:lambda:us-east-2:00000:function:function:1",
+            "orchestrationService.ap_frontend_id=0123456789abcd",
+            "orchestrationService.ap_enabled_users=johndoe,janedoe",
         ],
         controllers = [
             ConnectionController::class,

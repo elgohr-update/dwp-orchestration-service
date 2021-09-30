@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ecs.model.*
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
+import uk.gov.dwp.dataworks.APLambdaResponseJsonObject
 import uk.gov.dwp.dataworks.ContainerTab
 import uk.gov.dwp.dataworks.TextSSHKeyPair
 import uk.gov.dwp.dataworks.UserContainerProperties
@@ -330,6 +331,25 @@ class TaskDeploymentService {
         val azkabanUrl = "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=" + containerProperties.cognitoToken
         tabs[50] = ContainerTab("Azkaban", azkabanUrl, false)
 
+        val apEnabledUsers = configurationResolver.getStringConfig(ConfigKey.AP_ENABLED_USERS)
+        val apFrontendId = configurationResolver.getStringConfig(ConfigKey.AP_FRONTEND_ID)
+        val apLambdaArn = configurationResolver.getStringConfig(ConfigKey.AP_LAMBDA_ARN)
+
+        // Conditionally add AP tab to Chrome Headless tabs
+        if (apEnabledUsers.contains(containerProperties.userName)) {
+            val jsonPayload = "{\"frontend_id\": \"$apFrontendId\", \"cognito_username\": \"${containerProperties.userName}\"}"
+            val response = awsCommunicator.invokeLambda(apLambdaArn, jsonPayload)
+            if (response != null) {
+                val apLambdaResponseJsonObject = ObjectMapper().readValue<APLambdaResponseJsonObject>(response)
+                var apAuthorizedUrl = apLambdaResponseJsonObject.authorizedUrl
+                if (apAuthorizedUrl.isNotEmpty()) {
+                    // Replace Authorized URL's DNS inherited from VPCE by custom DNS
+                    apAuthorizedUrl = apAuthorizedUrl.replace("""(?<=/{2}[a-z0-9]{14}.)(.*)(?=/)""".toRegex(), "ap.dataworks.dwp.gov.uk")
+                    tabs[60] = ContainerTab("AP", apAuthorizedUrl, false)
+                }
+
+            }
+        }
 
         val headlessChromeTag: String = System.getenv("HEADLESS_CHROME_TAG") ?: "latest"
         val headlessChrome = ContainerDefinition.builder()

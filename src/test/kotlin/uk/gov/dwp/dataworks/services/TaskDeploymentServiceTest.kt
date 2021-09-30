@@ -19,12 +19,12 @@ import software.amazon.awssdk.services.ecs.model.TaskDefinition
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.Listener
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetGroup
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import uk.gov.dwp.dataworks.Application
-import uk.gov.dwp.dataworks.aws.AwsCommunicator
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.TargetTypeEnum
 import uk.gov.dwp.dataworks.ContainerTab
+import uk.gov.dwp.dataworks.aws.AwsCommunicator
 
 @RunWith(SpringRunner::class)
 @ContextConfiguration(classes = [Application::class, TaskDeploymentServiceTest.AwsCommunicatorConfig::class])
@@ -51,6 +51,9 @@ import uk.gov.dwp.dataworks.ContainerTab
                               "orchestrationService.github_proxy_url=proxy.tld:3128",
                               "orchestrationService.github_url=https://github.com",
                               "orchestrationService.livy_proxy_url=https://livy-proxy.com",
+                              "orchestrationService.ap_lambda_arn=arn:aws:lambda:us-east-2:00000:function:function:1",
+                              "orchestrationService.ap_frontend_id=0123456789abcd",
+                              "orchestrationService.ap_enabled_users=johndoe,janedoe",
                               "TAGS={}",
                               "spring.main.allow-bean-definition-overriding=true"])
 class TaskDeploymentServiceTest {
@@ -73,6 +76,29 @@ class TaskDeploymentServiceTest {
         whenever(awsCommunicator.getKmsKeyArn(any())).doAnswer {
             val alias = it.getArgument<String>(0).split("/").last()
             "arn:aws:kms:${configurationResolver.awsRegion}:000:key/testkeyarn-$alias"
+        }
+        whenever(
+            awsCommunicator.invokeLambda(
+                configurationResolver.getStringConfig(ConfigKey.AP_LAMBDA_ARN),
+                "{\"frontend_id\": \"${configurationResolver.getStringConfig(ConfigKey.AP_FRONTEND_ID)}\", \"cognito_username\": \"johndoe\"}"
+            )
+        ).doAnswer {
+            """
+            {
+              "AuthorizedUrl": "https://0123456789abcd.eu-west-2.my-vpce.aws/auth?token=abcd",
+              "ResponseMetadata": {
+                "RequestId": "REDACTED",
+                "HTTPStatusCode": 200,
+                "HTTPHeaders": {
+                  "x-amzn-requestid": "REDACTED",
+                  "content-type": "application/x-amz-json-1.1",
+                  "content-length": "3381",
+                  "date": "Tue, 28 Sep 2021 10:19:01 GMT"
+                },
+                "RetryAttempts": 0
+              }
+            }
+            """.trimIndent()
         }
     }
 
@@ -105,7 +131,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has tablist to open`() {
-        taskDeploymentService.runContainers("abcde", "username", listOf("team"),  emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "johndoe", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue
@@ -119,7 +145,8 @@ class TaskDeploymentServiceTest {
                "https://localhost:7000",
                "https://localhost:8888",
                "https://github.com",
-               "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde"
+               "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde",
+               "https://0123456789abcd.ap.dataworks.dwp.gov.uk/auth?token=abcd"
             )
 
     }

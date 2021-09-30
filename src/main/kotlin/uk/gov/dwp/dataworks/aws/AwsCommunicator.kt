@@ -53,10 +53,13 @@ import software.amazon.awssdk.services.iam.model.Policy
 import software.amazon.awssdk.services.iam.model.Role
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest
 import software.amazon.awssdk.services.kms.model.NotFoundException
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.rdsdata.model.ExecuteStatementRequest
 import software.amazon.awssdk.services.rdsdata.model.ExecuteStatementResponse
 import software.amazon.awssdk.services.rdsdata.model.RdsDataException
 import software.amazon.awssdk.services.rdsdata.model.SqlParameter
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.lambda.model.LambdaException
 import uk.gov.dwp.dataworks.MultipleListenersMatchedException
 import uk.gov.dwp.dataworks.MultipleLoadBalancersMatchedException
 import uk.gov.dwp.dataworks.NetworkConfigurationMissingException
@@ -668,5 +671,19 @@ class AwsCommunicator {
             throw RdsDataException.builder().message("Not configured").cause(e).build()
         }
 
+    }
+
+    /**
+     * Invokes [functionName] AWS lambda synchronously with [jsonPayload]
+     */
+    fun invokeLambda(functionName : String, jsonPayload : String): String? {
+        return try {
+            val payload = SdkBytes.fromUtf8String(jsonPayload)
+            val request = InvokeRequest.builder().functionName(functionName).payload(payload).build()
+            awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+        } catch (e: LambdaException) {
+            logger.error("Lambda invocation failed: ${e.message}")
+            null
+        }
     }
 }

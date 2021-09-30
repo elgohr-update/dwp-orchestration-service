@@ -3,6 +3,7 @@ package uk.gov.dwp.dataworks
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
@@ -103,4 +104,10 @@ data class StatementObject(
 data class AwsIamPolicyJsonObject(
         @JsonProperty("Version") var version: String,
         @JsonProperty("Statement") var statement: List<StatementObject>
+)
+
+@JsonNaming(PropertyNamingStrategy.UpperCamelCaseStrategy::class)
+data class APLambdaResponseJsonObject(
+    @JsonProperty("AuthorizedUrl") val authorizedUrl: String,
+    @JsonProperty("ResponseMetadata") val responseMetadata: JsonNode
 )
