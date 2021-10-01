@@ -680,12 +680,13 @@ class AwsCommunicator {
         return try {
             val payload = SdkBytes.fromUtf8String(jsonPayload)
             val request = InvokeRequest.builder().functionName(functionName).payload(payload).build()
-            if (awsClients.lambdaClient.invoke(request).functionError() == null) {
-                awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+            val response = awsClients.lambdaClient.invoke(request)
+            if (response.functionError() == null) {
+                response.payload().asUtf8String()
             } else {
                 logger.error(
                     "AP Lambda function has returned errors: ${
-                        awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+                        response.payload().asUtf8String()
                     }"
                 )
                 null
