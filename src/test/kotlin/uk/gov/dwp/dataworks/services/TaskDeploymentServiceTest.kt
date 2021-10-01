@@ -80,7 +80,7 @@ class TaskDeploymentServiceTest {
         whenever(
             awsCommunicator.invokeLambda(
                 configurationResolver.getStringConfig(ConfigKey.AP_LAMBDA_ARN),
-                "{\"frontend_id\": \"${configurationResolver.getStringConfig(ConfigKey.AP_FRONTEND_ID)}\", \"cognito_username\": \"johndoe\"}"
+                "{\"frontend_id\": \"${configurationResolver.getStringConfig(ConfigKey.AP_FRONTEND_ID)}\", \"cognito_username\": \"johndoe123\"}"
             )
         ).doAnswer {
             """
@@ -131,7 +131,7 @@ class TaskDeploymentServiceTest {
 
     @Test
     fun `Task definition has tablist to open`() {
-        taskDeploymentService.runContainers("abcde", "johndoe", listOf("team"),  emptyList(), 1280, 1024)
+        taskDeploymentService.runContainers("abcde", "johndoe123", listOf("team"),  emptyList(), 1280, 1024)
         val captor = argumentCaptor<TaskDefinition>()
         verify(awsCommunicator).registerTaskDefinition(any(), captor.capture(), any())
         val def = captor.firstValue

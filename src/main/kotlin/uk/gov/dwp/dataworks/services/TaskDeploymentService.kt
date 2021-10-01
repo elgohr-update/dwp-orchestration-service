@@ -336,7 +336,7 @@ class TaskDeploymentService {
         val apLambdaArn = configurationResolver.getStringConfig(ConfigKey.AP_LAMBDA_ARN)
 
         // Conditionally add AP tab to Chrome Headless tabs
-        if (apEnabledUsers.contains(containerProperties.userName)) {
+        if (apEnabledUsers.contains(containerProperties.userName.dropLast(3))) {
             val jsonPayload = "{\"frontend_id\": \"$apFrontendId\", \"cognito_username\": \"${containerProperties.userName}\"}"
             val response = awsCommunicator.invokeLambda(apLambdaArn, jsonPayload)
             if (response != null) {
