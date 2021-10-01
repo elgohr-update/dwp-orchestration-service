@@ -676,13 +676,22 @@ class AwsCommunicator {
     /**
      * Invokes [functionName] AWS lambda synchronously with [jsonPayload]
      */
-    fun invokeLambda(functionName : String, jsonPayload : String): String? {
+    fun invokeLambda(functionName: String, jsonPayload: String): String? {
         return try {
             val payload = SdkBytes.fromUtf8String(jsonPayload)
             val request = InvokeRequest.builder().functionName(functionName).payload(payload).build()
-            awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+            if (awsClients.lambdaClient.invoke(request).functionError() == null) {
+                awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+            } else {
+                logger.error(
+                    "AP Lambda function has returned errors: ${
+                        awsClients.lambdaClient.invoke(request).payload().asUtf8String()
+                    }"
+                )
+                null
+            }
         } catch (e: LambdaException) {
-            logger.error("Lambda invocation failed: ${e.message}")
+            logger.error("AP Lambda function call has raised an exception: ${e.message}")
             null
         }
     }

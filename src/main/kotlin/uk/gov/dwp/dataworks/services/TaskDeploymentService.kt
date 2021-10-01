@@ -344,7 +344,7 @@ class TaskDeploymentService {
                 var apAuthorizedUrl = apLambdaResponseJsonObject.authorizedUrl
                 if (apAuthorizedUrl.isNotEmpty()) {
                     // Replace Authorized URL's DNS inherited from VPCE by custom DNS
-                    apAuthorizedUrl = apAuthorizedUrl.replace("""(?<=/{2}[a-z0-9]{14}.)(.*)(?=/)""".toRegex(), "ap.dataworks.dwp.gov.uk")
+                    apAuthorizedUrl = apAuthorizedUrl.replace("""(?<=/{2}[a-z0-9-]{14}.)(.*)(?=/)""".toRegex(), "ap.dataworks.dwp.gov.uk")
                     tabs[60] = ContainerTab("AP", apAuthorizedUrl, false)
                 }
 
