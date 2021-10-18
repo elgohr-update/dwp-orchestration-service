@@ -341,10 +341,8 @@ class TaskDeploymentService {
             val response = awsCommunicator.invokeLambda(apLambdaArn, jsonPayload)
             if (response != null) {
                 val apLambdaResponseJsonObject = ObjectMapper().readValue<APLambdaResponseJsonObject>(response)
-                var apAuthorizedUrl = apLambdaResponseJsonObject.authorizedUrl
+                val apAuthorizedUrl = apLambdaResponseJsonObject.authorizedUrl
                 if (apAuthorizedUrl.isNotEmpty()) {
-                    // Replace Authorized URL's DNS inherited from VPCE by custom DNS
-                    apAuthorizedUrl = apAuthorizedUrl.replace("""(?<=/{2}[a-z0-9-]{14}.)(.*)(?=/)""".toRegex(), "ap.dataworks.dwp.gov.uk")
                     tabs[60] = ContainerTab("AP", apAuthorizedUrl, false)
                 }
 

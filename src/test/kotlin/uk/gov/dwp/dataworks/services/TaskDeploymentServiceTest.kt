@@ -146,7 +146,7 @@ class TaskDeploymentServiceTest {
                "https://localhost:8888",
                "https://github.com",
                "https://azkaban.workflow-manager.dataworks.dwp.gov.uk?action=login&cognitoToken=abcde",
-               "https://0123456789abcd.ap.dataworks.dwp.gov.uk/auth?token=abcd"
+               "https://0123456789abcd.eu-west-2.my-vpce.aws/auth?token=abcd"
             )
 
     }
