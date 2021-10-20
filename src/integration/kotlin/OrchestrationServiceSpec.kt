@@ -75,6 +75,7 @@ import java.net.URI
             "orchestrationService.ap_lambda_arn=arn:aws:lambda:us-east-2:00000:function:function:1",
             "orchestrationService.ap_frontend_id=0123456789abcd",
             "orchestrationService.ap_enabled_users=johndoe,janedoe",
+            "orchestrationService.frontend_domain_name=eu-west-2.my-vpce.aws",
         ],
         controllers = [
             ConnectionController::class,

@@ -99,5 +99,6 @@ enum class ConfigKey(val key: String, val isList: Boolean) {
     TOOLING_PERMISSION_OVERRIDES("orchestrationService.tooling_permission_overrides", true),
     AP_LAMBDA_ARN("orchestrationService.ap_lambda_arn", false),
     AP_FRONTEND_ID("orchestrationService.ap_frontend_id", false),
-    AP_ENABLED_USERS("orchestrationService.ap_enabled_users", false)
+    AP_ENABLED_USERS("orchestrationService.ap_enabled_users", false),
+    AP_FRONTEND_DOMAIN_NAME("orchestrationService.frontend_domain_name", false)
 }

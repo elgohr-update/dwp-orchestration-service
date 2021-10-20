@@ -54,6 +54,7 @@ import uk.gov.dwp.dataworks.aws.AwsCommunicator
                               "orchestrationService.ap_lambda_arn=arn:aws:lambda:us-east-2:00000:function:function:1",
                               "orchestrationService.ap_frontend_id=0123456789abcd",
                               "orchestrationService.ap_enabled_users=johndoe,janedoe",
+                              "orchestrationService.frontend_domain_name=eu-west-2.my-vpce.aws",
                               "TAGS={}",
                               "spring.main.allow-bean-definition-overriding=true"])
 class TaskDeploymentServiceTest {

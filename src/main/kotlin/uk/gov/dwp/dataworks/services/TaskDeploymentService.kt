@@ -210,12 +210,15 @@ class TaskDeploymentService {
             .swappiness(60)
             .build()
 
+        val apFrontendDomainName = configurationResolver.getStringConfig(ConfigKey.AP_FRONTEND_DOMAIN_NAME)
+
         val noProxyList = listOf(
             "git-codecommit.${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.amazonaws.com",
             ".${configurationResolver.getStringConfig(ConfigKey.AWS_REGION)}.compute.internal",
             ".dataworks.dwp.gov.uk",
             "localhost",
-            "127.0.0.1"
+            "127.0.0.1",
+            ".$apFrontendDomainName"
         ).joinToString(",")
         val proxyEnvVariables = arrayOf(
                 "HTTP_PROXY" to containerProperties.githubProxyUrl,
@@ -371,7 +374,7 @@ class TaskDeploymentService {
                         "--disable-infobars",
                         "--disable-features=TranslateUI",
                         "--disk-cache-dir=/dev/null",
-                        "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk, EXCLUDE *.ap.dataworks.dwp.gov.uk\"",
+                        "--host-rules=\"MAP * 127.0.0.1, MAP * localhost, EXCLUDE github.ucds.io, EXCLUDE git.ucd.gpn.gov.uk, EXCLUDE azkaban.workflow-manager.dataworks.dwp.gov.uk, EXCLUDE *.$apFrontendDomainName\"",
                         "--ignore-certificate-errors",
                         "--enable-auto-reload",
                         "--disable-popup-blocking",
