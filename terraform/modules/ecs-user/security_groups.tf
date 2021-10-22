@@ -24,6 +24,16 @@ resource "aws_security_group_rule" "vpce_from_host" {
   type                     = "ingress"
 }
 
+resource "aws_security_group_rule" "to_ap_vpce_sg" {
+  description              = "Allow instances to connect to AP frontend on peered VPC"
+  protocol                 = "tcp"
+  from_port                = 443
+  to_port                  = 443
+  security_group_id        = aws_security_group.user_host.id
+  source_security_group_id = var.ap_vpce_sg
+  type                     = "egress"
+}
+
 resource "aws_security_group_rule" "to_gh_proxy_vpce" {
   description              = "Allow instances to connect to VPCE"
   protocol                 = "tcp"

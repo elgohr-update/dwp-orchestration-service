@@ -281,6 +281,7 @@ module "ecs-user-host" {
   pushgateway_sg_id       = data.terraform_remote_state.aws_analytical_env_app.outputs.pushgateway.lb_sg.id
   github_proxy_vpce_sg_id = data.terraform_remote_state.aws_analytical_env_infra.outputs.internet_proxy_sg
   scaling                 = local.scaling[local.environment]
+  ap_vpce_sg              = data.terraform_remote_state.ap_infrastructure.outputs.ap_vpce_sg
 
   s3_packages = {
     bucket     = data.terraform_remote_state.common.outputs.config_bucket.id

@@ -16,6 +16,10 @@ variable "instance_type" {
   type = string
 }
 
+variable "ap_vpce_sg" {
+  type = string
+}
+
 variable "vpc" {
   type = object({
     id                   = string
