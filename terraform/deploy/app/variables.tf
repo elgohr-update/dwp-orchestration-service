@@ -328,7 +328,7 @@ variable "component_tags" {
     }
     production = {
       hue             = "0.0.102"
-      rstudio_oss     = "0.0.58"
+      rstudio_oss     = "0.0.61"
       jupyter_hub     = "0.0.76"
       headless_chrome = "0.0.15"
       guacd           = "0.0.21"
