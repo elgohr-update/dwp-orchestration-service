@@ -684,15 +684,11 @@ class AwsCommunicator {
             if (response.functionError() == null) {
                 response.payload().asUtf8String()
             } else {
-                logger.error(
-                    "AP Lambda function has returned errors: ${
-                        response.payload().asUtf8String()
-                    }"
-                )
+                logger.error("AP Lambda function has failed", "message" to response.payload().asUtf8String())
                 null
             }
         } catch (e: LambdaException) {
-            logger.error("AP Lambda function call has raised an exception: ${e.message}")
+            logger.error("AP Lambda function call has raised an exception", e)
             null
         }
     }

@@ -340,6 +340,7 @@ class TaskDeploymentService {
 
         // Conditionally add AP tab to Chrome Headless tabs
         if (apEnabledUsers.contains(containerProperties.userName.dropLast(3))) {
+            logger.info("User is authorised to access AP tab", "user_name" to containerProperties.userName)
             val jsonPayload = "{\"frontend_id\": \"$apFrontendId\", \"cognito_username\": \"${containerProperties.userName}\"}"
             val response = awsCommunicator.invokeLambda(apLambdaArn, jsonPayload)
             if (response != null) {
@@ -347,6 +348,7 @@ class TaskDeploymentService {
                 val apAuthorizedUrl = apLambdaResponseJsonObject.authorizedUrl
                 if (apAuthorizedUrl.isNotEmpty()) {
                     tabs[60] = ContainerTab("AP", apAuthorizedUrl, false)
+                    logger.info("AP tab created", "user_name" to containerProperties.userName)
                 }
 
             }
