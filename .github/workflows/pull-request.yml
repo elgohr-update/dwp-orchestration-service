@@ -26,7 +26,7 @@ jobs:
       - name: terraform-setup
         uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: ${{ secrets.TERRAFORM_13_VERSION }}
+          terraform_version: ${{ secrets.TERRAFORM_14_VERSION }}
       - name: terraform-fmt
         id: fmt
         run: terraform fmt --recursive
