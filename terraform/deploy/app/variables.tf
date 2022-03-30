@@ -200,13 +200,13 @@ variable "working_directory" {
 # AWS ECS Task Definition Variables
 # ---------------------------------------------------------------------------------------------------------------------
 variable "placement_constraints_task_definition" {
-  type        = list
+  type        = list(any)
   description = "(Optional) A set of placement constraints rules that are taken into consideration during task placement. Maximum number of placement_constraints is 10. This is a list of maps, where each map should contain \"type\" and \"expression\""
   default     = []
 }
 
 variable "proxy_configuration" {
-  type        = list
+  type        = list(any)
   description = "(Optional) The proxy configuration details for the App Mesh proxy. This is a list of maps, where each map should contain \"container_name\", \"properties\" and \"type\""
   default     = []
 }
@@ -241,7 +241,7 @@ variable "enable_ecs_managed_tags" {
 }
 variable "ordered_placement_strategy" {
   description = "(Optional) Service level strategy rules that are taken into consideration during task placement. List from top to bottom in order of precedence. The maximum number of ordered_placement_strategy blocks is 5. This is a list of maps where each map should contain \"id\" and \"field\""
-  type        = list
+  type        = list(any)
   default     = []
 }
 variable "health_check_grace_period_seconds" {
@@ -250,18 +250,18 @@ variable "health_check_grace_period_seconds" {
   default     = 0
 }
 variable "placement_constraints_ecs_service" {
-  type        = list
+  type        = list(any)
   description = "(Optional) rules that are taken into consideration during task placement. Maximum number of placement_constraints is 10. This is a list of maps, where each map should contain \"type\" and \"expression\""
   default     = []
 }
 variable "service_registries" {
   description = "(Optional) The service discovery registries for the service. The maximum number of service_registries blocks is 1. This is a map that should contain the following fields \"registry_arn\", \"port\", \"container_port\" and \"container_name\""
-  type        = map
+  type        = map(any)
   default     = {}
 }
 variable "security_groups" {
   description = "(Optional) The security groups associated with the task or service. If you do not specify a security group, the default security group for the VPC is used."
-  type        = list
+  type        = list(any)
   default     = []
 }
 variable "assign_public_ip" {
@@ -279,7 +279,7 @@ variable "container_image_tag" {
   description = "(Optional) Override the orchestration engine docker image tag version in each environment"
   type        = map(string)
   default = {
-    development = "0.0.287"
+    development = "0.0.304"
     qa          = "0.0.225"
     integration = "0.0.225"
     preprod     = "0.0.225"
