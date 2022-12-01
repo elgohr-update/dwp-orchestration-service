@@ -1,11 +1,16 @@
 jobs:
 - name: development
   plan:
+  - get: dw-al2-ecs-ami
+    trigger: true
   - get: orchestration-service
     trigger: true
   - .: (( inject meta.plan.terraform-bootstrap ))
-    params:
-      DEPLOY_PATH: app
+    config:
+      params:
+        DEPLOY_PATH: app
+      inputs:
+          - name: dw-al2-ecs-ami
   - .: (( inject meta.plan.terraform-apply ))
     config:
       run:
