@@ -11,6 +11,10 @@ groups:
   jobs:
   - orchestration-service-pr
 
+- name: pull-request-ami-test
+  jobs:
+  - orchestration-service-pr-ami
+
 - name: update-pipeline
   jobs:
   - update-pipeline

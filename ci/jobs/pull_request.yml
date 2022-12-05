@@ -1,5 +1,7 @@
 jobs:
   - name: orchestration-service-pr
+    max_in_flight: 1
+    serial_groups: [qa-applies]
     plan:
       - get: orchestration-service-pr
         trigger: true
@@ -51,6 +53,90 @@ jobs:
             status: failure
         on_success:
           put: orchestration-service-pr
+          params:
+            context: $BUILD_JOB_NAME
+            path: orchestration-service-pr
+            status: success
+
+  - name: orchestration-service-pr-ami
+    max_in_flight: 1
+    serial_groups: [qa-applies]
+    plan:
+      - in_parallel:
+          - put: meta
+            resource: meta-qa
+          - get: dw-al2-ecs-ami
+            resource: untested-dw-al2-ecs-ami
+            trigger: true
+      - get: orchestration-service-pr
+        trigger: true
+        version: every
+      - put: orchestration-service-pr
+        params:
+          context: $BUILD_JOB_NAME
+          path: orchestration-service-pr
+          status: pending
+      - .: (( inject meta.plan.check-ami-test-results ))
+        input_mapping:
+          untested_ami: dw-al2-ecs-ami
+      - .: (( inject meta.plan.terraform-bootstrap ))
+        config:
+          params:
+            AWS_ACC: ((aws_account.qa))
+            DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
+            - name: dw-al2-ecs-ami
+        input_mapping:
+          orchestration-service: orchestration-service-pr
+      - .: (( inject meta.plan.terraform-apply ))
+        config:
+          run:
+            dir: 'orchestration-service/terraform/deploy/app'
+          params:
+            TF_WORKSPACE: qa
+            DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
+        input_mapping:
+          orchestration-service: orchestration-service-pr
+      - .: (( inject meta.plan.terraform-plan ))
+        config:
+          run:
+            dir: 'orchestration-service/terraform/deploy/app'
+          params:
+            TF_WORKSPACE: qa
+            DEPLOY_PATH: app
+          inputs:
+            - name: previous_success
+        input_mapping:
+          orchestration-service: orchestration-service-pr
+      - .: (( inject meta.plan.terminate-ecs-instances ))
+        config:
+          inputs:
+            - name: previous_success
+            - name: dw-al2-ecs-ami
+      - .: (( inject meta.plan.test-ecs-ami ))
+    on_failure:
+      do:
+        - .: (( inject meta.plan.ami-test-results ))
+          task: ami-test-result-fail
+          config:
+            params:
+              RESULT: FAILED
+        - put: orchestration-service-pr
+          params:
+            context: $BUILD_JOB_NAME
+            path: orchestration-service-pr
+            status: failure
+    on_success:
+      do:
+        - .: (( inject meta.plan.ami-test-results ))
+          task: ami-test-result-success
+          config:
+            params:
+              RESULT: SUCCESS
+        - put: orchestration-service-pr
           params:
             context: $BUILD_JOB_NAME
             path: orchestration-service-pr
