@@ -159,7 +159,7 @@ resource "aws_launch_template" "user_host" {
   user_data = data.template_cloudinit_config.ecs_config.rendered
 
   block_device_mappings {
-    device_name = "/dev/sda1"
+    device_name = "/dev/xvda"
 
     ebs {
       delete_on_termination = true
