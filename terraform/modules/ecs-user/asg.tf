@@ -147,6 +147,19 @@ EOF
 EOF
   }
 
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
+    # extend relevant vg to allow docker to extract images
+    lvextend -l 75%FREE /dev/rootvg/varvol
+    xfs_growfs /dev/mapper/rootvg-varvol
+
+    lvextend -l 100%FREE /dev/rootvg/rootvol
+    xfs_growfs /dev/mapper/rootvg-rootvol
+EOF
+  }
 }
 
 resource "aws_launch_template" "user_host" {
@@ -159,7 +172,7 @@ resource "aws_launch_template" "user_host" {
   user_data = data.template_cloudinit_config.ecs_config.rendered
 
   block_device_mappings {
-    device_name = "/dev/xvda"
+    device_name = "/dev/sda1"
 
     ebs {
       delete_on_termination = true
