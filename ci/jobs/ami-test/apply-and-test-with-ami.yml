@@ -51,6 +51,32 @@ jobs:
           config:
             params:
               RESULT: FAILED
+        - get: dw-al2-ecs-ami-restored
+          resource: dw-al2-ecs-ami
+          trigger: false
+        - .: (( inject meta.plan.terraform-bootstrap ))
+          config:
+            params:
+              AWS_ACC: ((aws_account.qa))
+              DEPLOY_PATH: app
+        - .: (( inject meta.plan.terraform-apply ))
+          config:
+            run:
+              dir: 'orchestration-service/terraform/deploy/app'
+            params:
+              TF_WORKSPACE: qa
+              DEPLOY_PATH: app
+          input_mapping:
+            dw-al2-ecs-ami: dw-al2-ecs-ami-restored
+        - .: (( inject meta.plan.terraform-plan ))
+          config:
+            run:
+              dir: 'orchestration-service/terraform/deploy/app'
+            params:
+              TF_WORKSPACE: qa
+              DEPLOY_PATH: app
+          input_mapping:
+            dw-al2-ecs-ami: dw-al2-ecs-ami-restored
     on_success:
       do:
         - .: (( inject meta.plan.ami-test-results ))
