@@ -160,6 +160,25 @@ EOF
     xfs_growfs /dev/mapper/rootvg-rootvol
 EOF
   }
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+    #!/bin/bash
+
+    # accept anything that wasn't specifically covered
+    # temp change until we configure iptables to mirror sg
+    iptables -P INPUT ACCEPT
+    iptables -P FORWARD ACCEPT
+    iptables -P OUTPUT ACCEPT
+
+    # flushing all rules
+    iptables -F
+
+    # presisting rules for next boot
+    service iptables save
+
+EOF
+  }
 }
 
 resource "aws_launch_template" "user_host" {
